@@ -16,7 +16,22 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.services.ai_utils import extract_json, verify_keywords, with_language  # noqa: E402
+from app.services.ai_utils import cv_jd_content_blocks, extract_json, verify_keywords, with_language  # noqa: E402
+
+# --- cv_jd_content_blocks ---
+
+blocks = cv_jd_content_blocks("my cv text", "my jd text", "the trailing prompt")
+assert len(blocks) == 2
+assert blocks[0]["cache_control"] == {"type": "ephemeral"}
+assert "my cv text" in blocks[0]["text"] and "my jd text" in blocks[0]["text"]
+assert "the trailing prompt" not in blocks[0]["text"], "the varying prompt must not be inside the cached block"
+assert blocks[1] == {"type": "text", "text": "the trailing prompt"}
+assert "cache_control" not in blocks[1]
+
+blocks_a = cv_jd_content_blocks("same cv", "same jd", "prompt A")
+blocks_b = cv_jd_content_blocks("same cv", "same jd", "prompt B")
+assert blocks_a[0] == blocks_b[0], "the cacheable block must be byte-identical across calls with the same CV+JD - that's what makes it a cache hit, regardless of which prompt/function is calling"
+print("PASS: cv_jd_content_blocks splits CV+JD (cacheable) from the varying prompt (not cached), and the cacheable block is identical for the same CV+JD regardless of the trailing prompt")
 
 # --- with_language ---
 
@@ -79,7 +94,7 @@ async def _run():
         '"xyz": {"passing": [], "failing": [], "rewrites": []}, '
         '"tools": {}, "level": {"assessment": "Junior", "reasoning": "ok"}}'
     )
-    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         result = await cv_analysis.analyze_cv("some JD", "Built things with Python, no Airflow ever mentioned")
         call_kwargs = m_messages.create.call_args.kwargs
@@ -89,7 +104,7 @@ async def _run():
         assert "Python" in result["ats"]["matched"]
 
     fake_score_json = '{"score": 70, "matched": ["Python", "Rust"], "missing": [], "verdict": "ok"}'
-    with mock.patch.object(scoring.client, "messages") as m_messages:
+    with mock.patch.object(scoring.client.beta.prompt_caching, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_score_json))
         result = await scoring.score_vacancy("Built things with Python only", {"title": "t", "company": "c", "summary": "s"})
         call_kwargs = m_messages.create.call_args.kwargs
@@ -97,10 +112,21 @@ async def _run():
         assert "Rust" not in result["matched"]
         assert "Python" in result["matched"]
 
+    # The message content must be the 2-block prompt-caching shape: a
+    # cacheable CV+JD block, then the call-specific prompt as its own block.
+    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
+        m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
+        await cv_analysis.analyze_cv("some JD", "some CV")
+        content = m_messages.create.call_args.kwargs["messages"][0]["content"]
+        assert isinstance(content, list) and len(content) == 2
+        assert content[0]["cache_control"] == {"type": "ephemeral"}
+        assert "CV:" in content[0]["text"] and "JOB DESCRIPTION:" in content[0]["text"]
+        assert "cache_control" not in content[1], "the varying prompt block must NOT be cached"
+
     # analyze_cv's default (language="en") must send the exact same prompt
     # content as before language support existed - no behavior change for
     # existing English users.
-    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         await cv_analysis.analyze_cv("some JD", "some CV")
         default_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
@@ -108,16 +134,18 @@ async def _run():
         await cv_analysis.analyze_cv("some JD", "some CV", "en")
         explicit_en_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
         assert default_content == explicit_en_content
-        assert "Russian" not in default_content and "Uzbek" not in default_content
+        assert "Russian" not in default_content[1]["text"] and "Uzbek" not in default_content[1]["text"]
 
     # A non-English language must actually change what gets sent, not just
-    # be accepted and silently ignored.
-    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
+    # be accepted and silently ignored - and must land in the UNcached
+    # prompt block, not leak into the cacheable CV+JD block.
+    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         await cv_analysis.analyze_cv("some JD", "some CV", "ru")
-        ru_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
-        assert "Russian" in ru_content
-        assert "JSON keys" in ru_content, "must tell the model to keep JSON keys/control values in English"
+        content = m_messages.create.call_args.kwargs["messages"][0]["content"]
+        assert "Russian" in content[1]["text"]
+        assert "JSON keys" in content[1]["text"], "must tell the model to keep JSON keys/control values in English"
+        assert "Russian" not in content[0]["text"], "the language instruction must not leak into the cached CV+JD block"
 
 
 asyncio.run(_run())

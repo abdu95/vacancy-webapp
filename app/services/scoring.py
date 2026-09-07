@@ -9,7 +9,7 @@ import os
 import anthropic
 from dotenv import load_dotenv
 
-from app.services.ai_utils import extract_json, verify_keywords, with_language
+from app.services.ai_utils import cv_jd_content_blocks, extract_json, verify_keywords, with_language
 
 load_dotenv()
 
@@ -34,14 +34,11 @@ No preamble. Raw JSON only.
 async def score_vacancy(cv_text: str, vacancy: dict, language: str = "en") -> dict:
     jd_text = f"{vacancy['title']} at {vacancy['company']}\n{vacancy['summary']}"
     prompt = with_language(VACANCY_SCORE_PROMPT, language)
-    response = await client.messages.create(
+    response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=400,
         temperature=0.3,
-        messages=[{
-            "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd_text}\n\n{prompt}"
-        }],
+        messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd_text, prompt)}],
     )
     result = extract_json(response.content[0].text)
     result["matched"], result["missing"] = verify_keywords(

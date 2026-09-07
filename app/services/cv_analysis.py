@@ -17,7 +17,7 @@ import anthropic
 from dotenv import load_dotenv
 
 from app.prompts.analysis import ANALYSIS_PROMPT, ROADMAP_BLOCKS
-from app.services.ai_utils import extract_json, verify_keywords, with_language
+from app.services.ai_utils import cv_jd_content_blocks, extract_json, verify_keywords, with_language
 
 load_dotenv()
 
@@ -28,14 +28,11 @@ MODEL = "claude-sonnet-4-5"
 async def analyze_cv(jd: str, cv_text: str, language: str = "en") -> dict:
     """Full analysis: ats, xyz, tools, level."""
     prompt = with_language(ANALYSIS_PROMPT, language)
-    response = await client.messages.create(
+    response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=2000,
         temperature=0.3,
-        messages=[{
-            "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{prompt}"
-        }]
+        messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd, prompt)}]
     )
     result = extract_json(response.content[0].text)
     result["ats"]["matched"], result["ats"]["missing"] = verify_keywords(
@@ -59,14 +56,11 @@ async def generate_cv_fixes(level: str, jd: str, cv_text: str, language: str = "
     blocks = ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"])
     block = blocks[1]
     prompt = with_language(block["prompt"], language)
-    response = await client.messages.create(
+    response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=block.get("max_tokens", 900),
         temperature=0.3,
-        messages=[{
-            "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{prompt}"
-        }]
+        messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd, prompt)}]
     )
     text = "".join(b.text for b in response.content if b.type == "text")
     return extract_json(text, array=True)
@@ -77,13 +71,10 @@ async def generate_roadmap_item(level: str, item: int, jd: str, cv_text: str, la
     blocks = ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"])
     block = blocks[item]
     prompt = with_language(block["prompt"], language)
-    response = await client.messages.create(
+    response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=block.get("max_tokens", 1800),
         temperature=0.3,
-        messages=[{
-            "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{prompt}"
-        }]
+        messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd, prompt)}]
     )
     return "".join(b.text for b in response.content if b.type == "text")

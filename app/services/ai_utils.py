@@ -42,6 +42,33 @@ def with_language(prompt: str, language: str | None) -> str:
     )
 
 
+def cv_jd_content_blocks(cv_text: str, jd_text: str, prompt: str) -> list[dict]:
+    """Builds two-block message content for Anthropic's prompt caching:
+    the CV+JD prefix (identical across every call in a session - the
+    dominant share of input tokens, measured at ~3.4-3.9k of ~3.5-3.9k
+    total per call in a real session, see the backlog doc's real
+    unit-economics entry) marked cacheable, and the call-specific
+    trailing prompt as its own uncached block - it differs every call,
+    so folding it into the cached block would just prevent cache hits
+    for no benefit.
+
+    Needs `client.beta.prompt_caching.messages.create` (not the plain
+    `client.messages.create`) - the pinned SDK version (0.34.0) only
+    exposes cache_control support through that namespace. Verified live
+    against the real API: a second call with an identical CV+JD prefix
+    reads from cache (usage.cache_read_input_tokens > 0) instead of
+    paying full price again.
+    """
+    return [
+        {
+            "type": "text",
+            "text": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd_text}\n\n",
+            "cache_control": {"type": "ephemeral"},
+        },
+        {"type": "text", "text": prompt},
+    ]
+
+
 def extract_json(text: str, array: bool = False):
     pattern = r'\[.*\]' if array else r'\{.*\}'
     match = re.search(pattern, text, re.DOTALL)
