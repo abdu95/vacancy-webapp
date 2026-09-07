@@ -487,7 +487,7 @@ const state = {
   vacancies: [], vacancyIndex: -1, improveCount: 0,
   jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
-  roadmapItems: [], roadmapIndex: -1,
+  roadmapItems: [], roadmapIndex: -1, roadmapRequestSeq: 0,
 };
 const MAX_SEARCHES = 3;
 const MAX_IMPROVES = 2;
@@ -1627,7 +1627,7 @@ function renderAnalysisResult(data) {
   const el = document.getElementById("analysis-result");
   el.innerHTML = `
     ${analysisBlocksHtml(data.ats, data.xyz, data.tools, data.level)}
-    <button onclick="startRoadmap()">${escapeHtml(t("get_roadmap_btn"))}</button>
+    <button id="get_roadmap_btn" onclick="startRoadmap()">${escapeHtml(t("get_roadmap_btn"))}</button>
     <div id="roadmap-area"></div>
   `;
   scrollToBottom();
@@ -1643,8 +1643,14 @@ function roadmapTotalFor(level) {
 }
 
 function startRoadmap() {
+  // Disabled permanently, not just during this load - clicking it again
+  // once the roadmap has started would only ever wipe cached progress
+  // (state.roadmapItems reset to []), never help. Not re-enabled anywhere.
+  const btn = document.getElementById("get_roadmap_btn");
+  if (btn) btn.disabled = true;
   state.roadmapItems = [];
   state.roadmapIndex = -1;
+  state.roadmapRequestSeq = (state.roadmapRequestSeq || 0) + 1;
   document.getElementById("roadmap-area").innerHTML = "";
   loadRoadmapItem(1);
 }
@@ -1653,7 +1659,16 @@ function startRoadmap() {
 // items are cached in state.roadmapItems so Prev (and re-visiting a
 // Next you've already seen) is instant, only genuinely new items hit
 // the API. Only the current item is ever shown - no accumulation.
+//
+// requestId/state.roadmapRequestSeq guards against a real bug users hit:
+// with no guard, a second in-flight request for the same item (e.g. from
+// an impatient double-click before disabling existed) could resolve
+// *after* a newer one and silently overwrite state.roadmapIndex back to
+// an earlier item - "Next got stuck" / "thrown back to 1/4 after a
+// while". Any response that arrives once a newer request has already
+// been issued is now just discarded, never applied.
 async function loadRoadmapItem(item) {
+  const requestId = ++state.roadmapRequestSeq;
   const cacheIndex = item - 1;
   if (state.roadmapItems[cacheIndex]) {
     state.roadmapIndex = cacheIndex;
@@ -1667,10 +1682,12 @@ async function loadRoadmapItem(item) {
     const data = await callApi("/api/roadmap-item", {
       jd: state.jd, level: state.analysisLevel, item, analysis_id: state.currentAnalysisId,
     });
+    if (requestId !== state.roadmapRequestSeq) return; // superseded by a newer navigation - discard
     state.roadmapItems[cacheIndex] = data;
     state.roadmapIndex = cacheIndex;
     renderRoadmapCarousel();
   } catch (err) {
+    if (requestId !== state.roadmapRequestSeq) return; // stale error, ignore too
     console.error("Roadmap item failed:", err);
     areaEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("roadmap_failed_web")))}</div>`;
   }

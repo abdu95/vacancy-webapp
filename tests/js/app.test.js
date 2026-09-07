@@ -379,6 +379,62 @@ test("each roadmap-item request threads the analysis_id through, for My Checks h
   assert.deepEqual(seenAnalysisIds, [42, 42], "every roadmap-item call should carry the analysis_id from the initial analysis response");
 });
 
+test("the 'Get Roadmap' button disables itself immediately and stays disabled - real bug: it was clickable through its own load, letting an impatient double-click fire two concurrent requests", async () => {
+  const { dom } = loadRoadmapDom();
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await runAnalysis(window, document);
+  const btn = document.getElementById("get_roadmap_btn");
+  assert.equal(btn.disabled, false, "enabled before the first click");
+  window.startRoadmap();
+  assert.equal(btn.disabled, true, "must disable synchronously on click, before the fetch even resolves - that's the whole point");
+  await flush();
+  assert.equal(btn.disabled, true, "must stay disabled once the roadmap has loaded - clicking it again would only wipe cached progress, never help");
+});
+
+test("a stale roadmap-item response (from a request superseded by a newer one) never overwrites the carousel - the actual root cause of 'Next got stuck' / 'thrown back to 1/4'", async () => {
+  // A fetch mock with fine-grained control over WHEN each request resolves,
+  // so we can force the exact out-of-order scenario reported: an earlier
+  // request (item 1) resolving AFTER a later one (item 3) already rendered.
+  const pendingResolvers = {}; // item number -> resolve function
+  const fetchImpl = async (url, opts = {}) => {
+    const pathname = new URL(url, "https://example.com/").pathname;
+    if (pathname === "/api/cv-status") return { ok: true, status: 200, json: async () => ({ has_cv: true, lang: "en" }) };
+    if (pathname === "/api/cv-jd-analysis") return { ok: true, status: 200, json: async () => FAKE_ANALYSIS };
+    if (pathname === "/api/roadmap-item") {
+      const body = JSON.parse(opts.body);
+      const result = await new Promise((resolve) => { pendingResolvers[body.item] = resolve; });
+      return { ok: true, status: 200, json: async () => result };
+    }
+    throw new Error(`No mock for ${pathname}`);
+  };
+
+  const dom = loadApp({ fetchImpl });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  document.getElementById("jd_text").value = "x".repeat(150);
+  await window.analyzeCV();
+  await flush();
+
+  window.startRoadmap(); // dispatches the request for item 1, still pending
+  await flush();
+  window.loadRoadmapItem(3); // user (or a duplicate click) jumps to item 3, also still pending
+  await flush();
+
+  // The LATER request (item 3) resolves first...
+  pendingResolvers[3]({ title: "Technical Interview Prep", text: "Item 3 content", is_last: false });
+  await flush();
+  assert.match(document.getElementById("roadmap-area").innerHTML, /Item 3 content/);
+
+  // ...then the STALE, superseded item-1 request finally arrives late.
+  pendingResolvers[1]({ title: "CV Fixes", fixes: [], is_last: false });
+  await flush();
+  assert.match(document.getElementById("roadmap-area").innerHTML, /Item 3 content/,
+    "a late-arriving stale response must be discarded, not silently snap the carousel back to an earlier item");
+});
+
 // ── Post-roadmap flow: no more dead end ──────────────────────────────────
 
 test("finishing the roadmap with checks remaining offers 'analyze another job'", async () => {
