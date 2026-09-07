@@ -29,7 +29,7 @@ from app.prompts.analysis import (
     ROADMAP_MID_CONTEXT as _MID_CONTEXT,
     ROADMAP_SENIOR_CONTEXT as _SENIOR_CONTEXT,
 )
-from app.services.ai_utils import extract_json
+from app.services.ai_utils import extract_json, with_language
 
 load_dotenv()
 
@@ -65,8 +65,8 @@ _PROMPTS = {
 }
 
 
-async def generate_cv_fixes(level: str, vacancy: dict, cv_text: str) -> list:
-    prompt = _PROMPTS.get(level, _PROMPTS["Junior"])
+async def generate_cv_fixes(level: str, vacancy: dict, cv_text: str, language: str = "en") -> list:
+    prompt = with_language(_PROMPTS.get(level, _PROMPTS["Junior"]), language)
     jd_text = f"{vacancy['title']} at {vacancy['company']}\n{vacancy['summary']}"
     response = await client.messages.create(
         model=MODEL,

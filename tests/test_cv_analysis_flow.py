@@ -54,6 +54,7 @@ print("PASS: cv-jd-analysis without a CV on file returns 400, no API call made")
 # --- Test 2: JD too short -> 400, no Claude call ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "analyze_cv") as m_analyze:
     resp = client.post("/api/cv-jd-analysis", json={"init_data": init_data, "jd": "too short"})
     assert resp.status_code == 400, resp.text
@@ -63,6 +64,7 @@ print("PASS: cv-jd-analysis rejects a JD under 100 chars, no API call made")
 # --- Test 3: quota exhausted -> limit_reached, no Claude call, no increment, logs limit_reached ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_quota_status", return_value=(2, 2)), \
      mock.patch.object(cv_analysis, "analyze_cv") as m_analyze, \
      mock.patch.object(db, "increment_usage_count") as m_incr, \
@@ -78,6 +80,7 @@ print("PASS: cv-jd-analysis at quota returns limit_reached, logs the event, no C
 # --- Test 4: successful analysis increments usage exactly once, logs check_completed, returns outputs ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
      mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)), \
      mock.patch.object(db, "increment_usage_count") as m_incr, \
@@ -99,6 +102,7 @@ print("PASS: a successful analysis increments usage once, logs check_completed (
 # --- Test 4b: saving to history failing doesn't break the analysis response itself ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
      mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)), \
      mock.patch.object(db, "increment_usage_count"), \
@@ -109,9 +113,25 @@ with mock.patch.object(db, "ensure_user"), \
     assert resp.json()["analysis_id"] is None
 print("PASS: a failed history-save still returns the analysis itself, just with analysis_id=None")
 
+# --- Test 4c: the user's saved language is fetched and actually threaded into analyze_cv ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="ru") as m_lang, \
+     mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
+     mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)) as m_analyze, \
+     mock.patch.object(db, "increment_usage_count"), \
+     mock.patch.object(db, "log_event"), \
+     mock.patch.object(db, "save_analysis", return_value=1):
+    resp = client.post("/api/cv-jd-analysis", json={"init_data": init_data, "jd": "x" * 150})
+    assert resp.status_code == 200, resp.text
+    m_lang.assert_called_once_with(777)
+    m_analyze.assert_called_once_with("x" * 150, "Some CV text", "ru")
+print("PASS: cv-jd-analysis fetches the caller's saved language and passes it into analyze_cv")
+
 # --- Test 5: analysis failure doesn't increment usage ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_quota_status", return_value=(0, 2)), \
      mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(side_effect=ValueError("bad json"))), \
      mock.patch.object(db, "increment_usage_count") as m_incr:
@@ -123,6 +143,7 @@ print("PASS: a failed analysis does not consume quota")
 # --- Test 6: roadmap item 1 for Junior routes to generate_cv_fixes, logs roadmap_requested once ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_cv_fixes", new=mock.AsyncMock(
          return_value=[{"issue": "x", "before": "", "after": "y"}])) as m_fixes, \
      mock.patch.object(cv_analysis, "generate_roadmap_item") as m_roadmap, \
@@ -143,6 +164,7 @@ print("PASS: roadmap item 1 (Junior/Mid/Senior) routes to generate_cv_fixes and 
 # --- Test 7: roadmap item 4 for Junior is the last item and returns raw text ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(
          return_value="### Target Companies\n...")) as m_roadmap:
     resp = client.post("/api/roadmap-item", json={
@@ -159,6 +181,7 @@ print("PASS: roadmap item 4 (Junior) is flagged as the last item and returns raw
 # --- Test 8: Pre-Junior roadmap has only 3 items, item 3 is last, item 1 is not CV Fixes ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(
          return_value="### Stepping-Stone Roles\n...")):
     resp = client.post("/api/roadmap-item", json={
@@ -173,6 +196,7 @@ print("PASS: Pre-Junior's 3-item roadmap ends at item 3, with different content 
 # --- Test 8b: roadmap-item with an analysis_id saves the item into that analysis's history ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_cv_fixes", new=mock.AsyncMock(
          return_value=[{"issue": "x", "before": "", "after": "y"}])), \
      mock.patch.object(db, "log_event"), \
@@ -187,6 +211,7 @@ print("PASS: roadmap-item with an analysis_id saves the item into that analysis'
 # --- Test 8c: roadmap-item with no analysis_id (e.g. old client, or history-save failed earlier) skips saving ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(return_value="### Target Companies\n...")), \
      mock.patch.object(db, "save_roadmap_item") as m_save_item:
     resp = client.post("/api/roadmap-item", json={
@@ -199,6 +224,7 @@ print("PASS: roadmap-item without an analysis_id doesn't attempt to save to hist
 # --- Test 8d: a failed history-save still returns the roadmap item itself ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(return_value="### Target Companies\n...")), \
      mock.patch.object(db, "save_roadmap_item", side_effect=Exception("db down")):
     resp = client.post("/api/roadmap-item", json={
@@ -245,6 +271,7 @@ print("PASS: looks_like_url correctly distinguishes a bare URL from JD text")
 # --- Test 13: a pasted URL is fetched and the extracted text is analyzed, not the URL itself ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
      mock.patch.object(jd_fetch, "fetch_jd_text", new=mock.AsyncMock(
          return_value="Extracted job posting text " * 10)) as m_fetch, \
@@ -266,6 +293,7 @@ print("PASS: a pasted URL is fetched and the extracted page text (not the URL) i
 # --- Test 14: a URL that fails to fetch returns a friendly 400, no Claude call ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(jd_fetch, "fetch_jd_text", new=mock.AsyncMock(side_effect=Exception("connection refused"))), \
      mock.patch.object(cv_analysis, "analyze_cv") as m_analyze:
     resp = client.post("/api/cv-jd-analysis", json={

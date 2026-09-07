@@ -17,7 +17,7 @@ import anthropic
 from dotenv import load_dotenv
 
 from app.prompts.analysis import ANALYSIS_PROMPT, ROADMAP_BLOCKS
-from app.services.ai_utils import extract_json, verify_keywords
+from app.services.ai_utils import extract_json, verify_keywords, with_language
 
 load_dotenv()
 
@@ -25,15 +25,16 @@ client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL = "claude-sonnet-4-5"
 
 
-async def analyze_cv(jd: str, cv_text: str) -> dict:
+async def analyze_cv(jd: str, cv_text: str, language: str = "en") -> dict:
     """Full analysis: ats, xyz, tools, level."""
+    prompt = with_language(ANALYSIS_PROMPT, language)
     response = await client.messages.create(
         model=MODEL,
         max_tokens=2000,
         temperature=0.3,
         messages=[{
             "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{ANALYSIS_PROMPT}"
+            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{prompt}"
         }]
     )
     result = extract_json(response.content[0].text)
@@ -53,28 +54,29 @@ def roadmap_max_item(level: str) -> int:
     return max(blocks.keys())
 
 
-async def generate_cv_fixes(level: str, jd: str, cv_text: str) -> list:
+async def generate_cv_fixes(level: str, jd: str, cv_text: str, language: str = "en") -> list:
     """Generate the Top-5 CV fixes as structured data (item 1 of the roadmap)."""
     blocks = ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"])
     block = blocks[1]
+    prompt = with_language(block["prompt"], language)
     response = await client.messages.create(
         model=MODEL,
         max_tokens=block.get("max_tokens", 900),
         temperature=0.3,
         messages=[{
             "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{block['prompt']}"
+            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{prompt}"
         }]
     )
     text = "".join(b.text for b in response.content if b.type == "text")
     return extract_json(text, array=True)
 
 
-async def generate_roadmap_item(level: str, item: int, jd: str, cv_text: str) -> str:
+async def generate_roadmap_item(level: str, item: int, jd: str, cv_text: str, language: str = "en") -> str:
     """Generate one roadmap action item for the given level."""
     blocks = ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"])
     block = blocks[item]
-    prompt = block["prompt"]
+    prompt = with_language(block["prompt"], language)
     response = await client.messages.create(
         model=MODEL,
         max_tokens=block.get("max_tokens", 1800),

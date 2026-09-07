@@ -9,7 +9,7 @@ import os
 import anthropic
 from dotenv import load_dotenv
 
-from app.services.ai_utils import extract_json, verify_keywords
+from app.services.ai_utils import extract_json, verify_keywords, with_language
 
 load_dotenv()
 
@@ -31,15 +31,16 @@ No preamble. Raw JSON only.
 """
 
 
-async def score_vacancy(cv_text: str, vacancy: dict) -> dict:
+async def score_vacancy(cv_text: str, vacancy: dict, language: str = "en") -> dict:
     jd_text = f"{vacancy['title']} at {vacancy['company']}\n{vacancy['summary']}"
+    prompt = with_language(VACANCY_SCORE_PROMPT, language)
     response = await client.messages.create(
         model=MODEL,
         max_tokens=400,
         temperature=0.3,
         messages=[{
             "role": "user",
-            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd_text}\n\n{VACANCY_SCORE_PROMPT}"
+            "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd_text}\n\n{prompt}"
         }],
     )
     result = extract_json(response.content[0].text)

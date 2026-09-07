@@ -254,7 +254,8 @@ async def score_vacancy_endpoint(req: ScoreRequest):
         raise HTTPException(400, "No CV on file - upload one first")
 
     try:
-        score = await scoring.score_vacancy(cv_text, req.vacancy.model_dump())
+        language = db.get_user_language(user["id"])
+        score = await scoring.score_vacancy(cv_text, req.vacancy.model_dump(), language)
     except Exception:
         logger.exception("Scoring failed")
         raise HTTPException(502, "Couldn't score your CV, try again")
@@ -276,7 +277,8 @@ async def cv_recommendations(req: RecommendationsRequest):
         raise HTTPException(400, "No CV on file - upload one first")
 
     try:
-        fixes = await cv_fixes.generate_cv_fixes(req.level, req.vacancy.model_dump(), cv_text)
+        language = db.get_user_language(user["id"])
+        fixes = await cv_fixes.generate_cv_fixes(req.level, req.vacancy.model_dump(), cv_text, language)
     except Exception:
         logger.exception("CV fix generation failed")
         raise HTTPException(502, "Couldn't generate recommendations, try again")
@@ -441,7 +443,8 @@ async def cv_jd_analysis(req: AnalyzeRequest):
         return {"limit_reached": True, "remaining": 0, "quota": quota}
 
     try:
-        outputs = await cv_analysis.analyze_cv(jd_text, cv_text)
+        language = db.get_user_language(user["id"])
+        outputs = await cv_analysis.analyze_cv(jd_text, cv_text, language)
     except Exception:
         logger.exception("CV/JD analysis failed")
         raise HTTPException(502, "Analysis failed, try again")
@@ -486,11 +489,12 @@ async def roadmap_item(req: RoadmapItemRequest):
         db.log_event(user["id"], "roadmap_requested")
 
     try:
+        language = db.get_user_language(user["id"])
         if title == "CV Fixes":
-            fixes = await cv_analysis.generate_cv_fixes(req.level, req.jd, cv_text)
+            fixes = await cv_analysis.generate_cv_fixes(req.level, req.jd, cv_text, language)
             result = {"title": title, "fixes": fixes, "is_last": req.item >= max_item}
         else:
-            text = await cv_analysis.generate_roadmap_item(req.level, req.item, req.jd, cv_text)
+            text = await cv_analysis.generate_roadmap_item(req.level, req.item, req.jd, cv_text, language)
             result = {"title": title, "text": text, "is_last": req.item >= max_item}
     except Exception:
         logger.exception("Roadmap item generation failed")

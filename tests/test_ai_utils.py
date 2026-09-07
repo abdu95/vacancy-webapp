@@ -16,7 +16,18 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.services.ai_utils import extract_json, verify_keywords  # noqa: E402
+from app.services.ai_utils import extract_json, verify_keywords, with_language  # noqa: E402
+
+# --- with_language ---
+
+assert with_language("PROMPT", "en") == "PROMPT", "English must be a no-op - byte-identical to before this existed"
+assert with_language("PROMPT", None) == "PROMPT"
+assert with_language("PROMPT", "fr") == "PROMPT", "an unrecognized code must also be a no-op, not raise"
+ru_prompt = with_language("PROMPT", "ru")
+assert ru_prompt != "PROMPT" and "Russian" in ru_prompt and ru_prompt.startswith("PROMPT")
+uz_prompt = with_language("PROMPT", "uz")
+assert uz_prompt != "PROMPT" and "Uzbek" in uz_prompt
+print("PASS: with_language is a no-op for English/unknown codes, appends a real instruction for ru/uz")
 
 # --- extract_json ---
 
@@ -86,8 +97,31 @@ async def _run():
         assert "Rust" not in result["matched"]
         assert "Python" in result["matched"]
 
+    # analyze_cv's default (language="en") must send the exact same prompt
+    # content as before language support existed - no behavior change for
+    # existing English users.
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
+        m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
+        await cv_analysis.analyze_cv("some JD", "some CV")
+        default_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
+        m_messages.create.reset_mock()
+        await cv_analysis.analyze_cv("some JD", "some CV", "en")
+        explicit_en_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
+        assert default_content == explicit_en_content
+        assert "Russian" not in default_content and "Uzbek" not in default_content
+
+    # A non-English language must actually change what gets sent, not just
+    # be accepted and silently ignored.
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
+        m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
+        await cv_analysis.analyze_cv("some JD", "some CV", "ru")
+        ru_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
+        assert "Russian" in ru_content
+        assert "JSON keys" in ru_content, "must tell the model to keep JSON keys/control values in English"
+
 
 asyncio.run(_run())
 print("PASS: analyze_cv and score_vacancy both pin temperature=0.3 and actually filter hallucinated keywords")
+print("PASS: language threads into the real prompt sent to Claude - English unchanged, ru/uz actually different")
 
 print("\nALL AI_UTILS CHECKS PASSED")

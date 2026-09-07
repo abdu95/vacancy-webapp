@@ -10,6 +10,37 @@ changes.
 import json
 import re
 
+# Maps bot/i18n.py's language codes (also what db.get_user_language()
+# returns) to what to actually tell the model. "en" is intentionally
+# absent - with_language() is a no-op for it, so English generation is
+# byte-for-byte unchanged from before this existed.
+_LANGUAGE_NAMES = {
+    "uz": "Uzbek (Latin script)",
+    "ru": "Russian",
+}
+
+
+def with_language(prompt: str, language: str | None) -> str:
+    """Appends a "write your response in {language}" instruction to a
+    prompt - single-call native generation, not a separate translate
+    pass (see backlog doc: half the cost/latency of generate-then-
+    translate, and reads more natural). Only touches the freeform prose
+    fields in practice, since every prompt's JSON schema already pins
+    its own keys/control values in English regardless of language.
+    A no-op for English or an unrecognized/missing language code, so
+    existing English behavior is completely unaffected.
+    """
+    name = _LANGUAGE_NAMES.get(language)
+    if not name:
+        return prompt
+    return prompt + (
+        f"\n\nWrite every free-text field (verdict, reasoning, issue/after, "
+        f"prose sections, etc.) in {name}. Keep JSON keys and any fixed "
+        f"control values (like strong/mentioned/not_found) in English exactly "
+        f"as specified above - only the natural-language content should "
+        f"change."
+    )
+
 
 def extract_json(text: str, array: bool = False):
     pattern = r'\[.*\]' if array else r'\{.*\}'

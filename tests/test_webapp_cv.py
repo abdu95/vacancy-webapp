@@ -154,12 +154,13 @@ TEST_VACANCY = {
 from app.services import scoring  # noqa: E402
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(scoring, "score_vacancy", new=mock.AsyncMock(
          return_value={"score": 75, "matched": ["SQL"], "missing": ["Tableau"], "verdict": "Decent fit"})) as m_score:
     resp = client.post("/api/score-vacancy", json={"init_data": init_data, "vacancy": TEST_VACANCY})
     assert resp.status_code == 200, resp.text
     assert resp.json()["score"] == 75
-    m_score.assert_called_once_with("Some CV text", TEST_VACANCY)
+    m_score.assert_called_once_with("Some CV text", TEST_VACANCY, "en")
 print("PASS: score-vacancy scores against on-file CV")
 
 # --- Test 11: score-vacancy with no CV on file -> 400 ---
@@ -173,13 +174,14 @@ from app.services import cv_fixes  # noqa: E402
 fake_fixes = [{"issue": "x", "before": "y", "after": "z"}] * 5
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_fixes, "generate_cv_fixes", new=mock.AsyncMock(return_value=fake_fixes)) as m_fixes:
     resp = client.post("/api/cv-recommendations", json={
         "init_data": init_data, "vacancy": TEST_VACANCY, "level": "Senior",
     })
     assert resp.status_code == 200, resp.text
     assert len(resp.json()["fixes"]) == 5
-    m_fixes.assert_called_once_with("Senior", TEST_VACANCY, "Some CV text")
+    m_fixes.assert_called_once_with("Senior", TEST_VACANCY, "Some CV text", "en")
 print("PASS: cv-recommendations passes level/vacancy/cv through correctly")
 
 # --- Test 13: apply saves with score, reads cv_text fresh from db (not trusting client) ---
