@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(railway status *)",
+      "Bash(railway variables *)",
+      "Bash(railway logs *)",
+      "Bash(railway list *)",
+      "Bash(railway domain *)",
+      "Bash(railway deployment *)",
+      "Bash(railway service *)",
+      "Bash(railway up *)",
+      "Bash(railway link *)",
+      "Bash(curl *)",
+      "Bash(git add *)",
+      "Bash(git commit -m *)",
+      "Bash(git push *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git add *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git commit -m *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git push *)",
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp/tests/js\" && npm test *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git status *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git diff *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git log *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && git stash list)",
+      "Bash(grep *)",
+      "Bash(cd \"/Users/mac/Mac files/ae coach bot/vacancy-webapp\" && grep *)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_ai_utils.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_analyses_db.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_company_cache.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_cv_analysis_flow.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_greenhouse_source.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_my_checks.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_my_cvs.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_saved_search.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_vacancy_alerts.py)",
+      "Bash(/opt/homebrew/bin/python3.11 tests/test_webapp_cv.py)"
+    ]
+  }
+}
