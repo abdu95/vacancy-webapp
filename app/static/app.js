@@ -328,10 +328,13 @@ const I18N = {
   tab_analyze_label: { en: "Analyze", uz: "Tahlil", ru: "Анализ" },
   tab_profile_label: { en: "Profile", uz: "Profil", ru: "Профиль" },
   checks_title: { en: "Checks", uz: "Tekshiruvlar", ru: "Проверки" },
-  my_checks_coming_soon: {
-    en: "Coming soon — a history of your past CV analyses will show up here.",
-    uz: "Tez orada — o'tgan CV tahlillaringiz tarixi shu yerda ko'rinadi.",
-    ru: "Скоро — здесь появится история ваших прошлых анализов резюме.",
+  my_checks_empty: {
+    en: "No checks yet — analyze your CV against a job to see it here.",
+    uz: "Hali tekshiruv yo'q — CV'ingizni ish e'loniga solishtiring, u shu yerda ko'rinadi.",
+    ru: "Проверок пока нет — сравните резюме с вакансией, и она появится здесь.",
+  },
+  my_checks_load_failed: {
+    en: "Couldn't load your checks.", uz: "Tekshiruvlaringizni yuklab bo'lmadi.", ru: "Не удалось загрузить ваши проверки.",
   },
   my_cvs_title: { en: "My CVs", uz: "Mening CV'larim", ru: "Мои резюме" },
   my_cvs_empty: {
@@ -422,7 +425,6 @@ function applyStaticTranslations() {
   document.getElementById("profile-my-applications-label").textContent = t("profile_applications_btn");
   document.getElementById("my-checks-title").textContent = t("profile_my_checks_btn");
   document.getElementById("btn-my-checks-back").textContent = t("back_link");
-  document.getElementById("my-checks-coming-soon").textContent = t("my_checks_coming_soon");
 
   const filterEl = document.getElementById("applications-filter");
   filterEl.innerHTML = ['all', 'applied', 'phone_screen', 'tech_interview', 'offer', 'rejected', 'ghosted']
@@ -441,7 +443,7 @@ if (tg) {
 const state = {
   jobTitle: "", seenCompanies: [], searchCount: 0,
   vacancies: [], vacancyIndex: -1, improveCount: 0,
-  jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null,
+  jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
   roadmapItems: [], roadmapIndex: -1,
 };
@@ -611,8 +613,112 @@ async function showChecksScreen() {
   }
 }
 
-function showMyChecksPlaceholder() {
+// ── My Checks (analysis history, mirrors the My CVs/Applications list/detail pattern) ──
+let allChecks = [];
+
+async function showMyChecks() {
   showScreen("my-checks-screen");
+  document.getElementById("my-checks-detail").hidden = true;
+  document.getElementById("my-checks-list-section").hidden = false;
+  const listEl = document.getElementById("my-checks-list");
+  listEl.innerHTML = `<div class="hint">…</div>`;
+  try {
+    const data = await callApi("/api/checks", {});
+    allChecks = data.checks || [];
+    renderMyChecksList();
+  } catch (err) {
+    console.error("Loading checks failed:", err);
+    listEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("my_checks_load_failed")))}</div>`;
+  }
+}
+
+function jdPreview(jdText) {
+  const oneLine = (jdText || "").replace(/\s+/g, " ").trim();
+  return oneLine.length > 70 ? oneLine.slice(0, 70) + "…" : oneLine;
+}
+
+function renderMyChecksList() {
+  const listEl = document.getElementById("my-checks-list");
+  if (allChecks.length === 0) {
+    listEl.innerHTML = `<div class="hint">${escapeHtml(t("my_checks_empty"))}</div>`;
+    return;
+  }
+  listEl.innerHTML = allChecks.map(c => `
+    <div class="card clickable" style="margin-bottom:8px;" onclick="openCheckDetail(${c.id})">
+      <h3>${escapeHtml(jdPreview(c.jd_text))}</h3>
+      <div class="company">${escapeHtml(new Date(c.created_at).toLocaleDateString())} — ${escapeHtml(c.level.assessment)}</div>
+    </div>
+  `).join("");
+}
+
+async function openCheckDetail(analysisId) {
+  document.getElementById("my-checks-list-section").hidden = true;
+  const detailEl = document.getElementById("my-checks-detail");
+  detailEl.hidden = false;
+  detailEl.innerHTML = `<div class="hint">…</div>`;
+  try {
+    const check = await callApi("/api/checks/get", { analysis_id: analysisId });
+    renderCheckDetail(check);
+  } catch (err) {
+    console.error("Loading check detail failed:", err);
+    detailEl.innerHTML = `
+      <button class="back-btn" onclick="closeCheckDetail()">${escapeHtml(t("back_link"))}</button>
+      <div class="error" style="margin-top:12px;">⚠️ ${escapeHtml(friendlyError(err, t("my_checks_load_failed")))}</div>
+    `;
+  }
+}
+
+function renderCheckDetail(check) {
+  const detailEl = document.getElementById("my-checks-detail");
+  const roadmapKeys = Object.keys(check.roadmap_items || {}).map(Number).sort((a, b) => a - b);
+  const roadmapHtml = roadmapKeys.map(item => {
+    const itemData = check.roadmap_items[item];
+    return `
+      <h3 style="margin-top:16px;">${escapeHtml(itemData.title)}</h3>
+      ${roadmapItemBodyHtml(itemData)}
+    `;
+  }).join("");
+
+  detailEl.innerHTML = `
+    <button class="back-btn" onclick="closeCheckDetail()">${escapeHtml(t("back_link"))}</button>
+    <div class="card" style="margin-top:12px;">
+      <div class="company">${escapeHtml(new Date(check.created_at).toLocaleDateString())}</div>
+      <div class="roadmap-body">${escapeHtml(check.jd_text)}</div>
+    </div>
+    ${analysisBlocksHtml(check.ats, check.xyz, check.tools, check.level)}
+    ${roadmapHtml}
+    <button class="danger" style="margin-top:16px;" onclick="confirmDeleteCheck(${check.id})">${escapeHtml(t("delete_application_btn"))}</button>
+    <div id="check-detail-action-result"></div>
+  `;
+  scrollToBottom();
+}
+
+function closeCheckDetail() {
+  document.getElementById("my-checks-detail").hidden = true;
+  document.getElementById("my-checks-list-section").hidden = false;
+}
+
+function confirmDeleteCheck(analysisId) {
+  const el = document.getElementById("check-detail-action-result");
+  el.innerHTML = `
+    <div class="prompt-block">${escapeHtml(t("delete_confirm"))}</div>
+    <div class="row">
+      <button class="danger" onclick="deleteCheckNow(${analysisId})">${escapeHtml(t("delete_confirm_yes"))}</button>
+      <button class="secondary" onclick="document.getElementById('check-detail-action-result').innerHTML=''">${escapeHtml(t("delete_confirm_no"))}</button>
+    </div>
+  `;
+}
+
+async function deleteCheckNow(analysisId) {
+  const el = document.getElementById("check-detail-action-result");
+  el.innerHTML = `<div class="hint">${escapeHtml(t("saving"))}</div>`;
+  try {
+    await callApi("/api/checks/delete", { analysis_id: analysisId });
+    await showMyChecks();
+  } catch (err) {
+    console.error("Delete check failed:", err);
+    el.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("delete_failed")))}</div>`;
+  }
 }
 
 async function uploadCV() {
@@ -1358,6 +1464,7 @@ async function analyzeCV() {
     state.analysisLevel = data.level.assessment;
     state.analysisRemaining = data.remaining;
     state.analysisQuota = data.quota;
+    state.currentAnalysisId = data.analysis_id ?? null;
     updateChecksHeader(data.remaining, data.quota);
     document.getElementById("jd-input-box").hidden = true;
     renderAnalysisResult(data);
@@ -1369,10 +1476,9 @@ async function analyzeCV() {
   }
 }
 
-function renderAnalysisResult(data) {
-  const el = document.getElementById("analysis-result");
-  const ats = data.ats, xyz = data.xyz, tools = data.tools, level = data.level;
-
+// Shared between the live analysis screen and the My Checks history detail
+// view - same four cards either way, just fed live data vs. a saved row.
+function analysisBlocksHtml(ats, xyz, tools, level) {
   const toolEmoji = { strong: "✅", mentioned: "🟡", not_found: "❌" };
   const toolLabelKey = { strong: "tool_strong", mentioned: "tool_mentioned", not_found: "tool_not_found" };
 
@@ -1390,7 +1496,7 @@ function renderAnalysisResult(data) {
     </div>
   `).join("");
 
-  el.innerHTML = `
+  return `
     <div class="card">
       <h3>${escapeHtml(t("ats_heading"))} — ${ats.score}/100</h3>
       <div class="score-bar"><div class="score-bar-fill" style="width:${ats.score}%;"></div></div>
@@ -1412,6 +1518,13 @@ function renderAnalysisResult(data) {
       <h3>${escapeHtml(t("level_heading"))} — ${escapeHtml(level.assessment)}</h3>
       <p>${escapeHtml(level.reasoning || "")}</p>
     </div>
+  `;
+}
+
+function renderAnalysisResult(data) {
+  const el = document.getElementById("analysis-result");
+  el.innerHTML = `
+    ${analysisBlocksHtml(data.ats, data.xyz, data.tools, data.level)}
     <button onclick="startRoadmap()">${escapeHtml(t("get_roadmap_btn"))}</button>
     <div id="roadmap-area"></div>
   `;
@@ -1449,7 +1562,9 @@ async function loadRoadmapItem(item) {
   const areaEl = document.getElementById("roadmap-area");
   areaEl.innerHTML = `<div class="hint">${escapeHtml(t("analyzing_message_web"))}</div>`;
   try {
-    const data = await callApi("/api/roadmap-item", { jd: state.jd, level: state.analysisLevel, item });
+    const data = await callApi("/api/roadmap-item", {
+      jd: state.jd, level: state.analysisLevel, item, analysis_id: state.currentAnalysisId,
+    });
     state.roadmapItems[cacheIndex] = data;
     state.roadmapIndex = cacheIndex;
     renderRoadmapCarousel();
@@ -1468,6 +1583,21 @@ function formatRoadmapText(raw) {
   }).join("\n");
 }
 
+// Shared between the live roadmap carousel and the My Checks history
+// detail view (which lists every saved roadmap item, not one at a time).
+function roadmapItemBodyHtml(data) {
+  if (data.fixes) {
+    return (data.fixes || []).map(f => `
+      <div class="card" style="margin-top:8px;">
+        <p><b>${escapeHtml(t("issue_label"))}</b> ${escapeHtml(f.issue)}</p>
+        ${f.before ? `<p><i>${escapeHtml(t("before_label"))}</i> ${escapeHtml(f.before)}</p>` : ""}
+        <p><i>${escapeHtml(t("after_label"))}</i> ${escapeHtml(f.after)}</p>
+      </div>
+    `).join("");
+  }
+  return `<div class="card" style="margin-top:8px;"><div class="roadmap-body">${formatRoadmapText(data.text)}</div></div>`;
+}
+
 function renderRoadmapCarousel() {
   const areaEl = document.getElementById("roadmap-area");
   const idx = state.roadmapIndex;
@@ -1477,19 +1607,9 @@ function renderRoadmapCarousel() {
   const canPrev = idx > 0;
   const canNext = !data.is_last;
 
-  const bodyHtml = data.fixes
-    ? (data.fixes || []).map(f => `
-        <div class="card" style="margin-top:8px;">
-          <p><b>${escapeHtml(t("issue_label"))}</b> ${escapeHtml(f.issue)}</p>
-          ${f.before ? `<p><i>${escapeHtml(t("before_label"))}</i> ${escapeHtml(f.before)}</p>` : ""}
-          <p><i>${escapeHtml(t("after_label"))}</i> ${escapeHtml(f.after)}</p>
-        </div>
-      `).join("")
-    : `<div class="card" style="margin-top:8px;"><div class="roadmap-body">${formatRoadmapText(data.text)}</div></div>`;
-
   areaEl.innerHTML = `
     <h3 style="margin-top:16px;">${escapeHtml(data.title)}</h3>
-    ${bodyHtml}
+    ${roadmapItemBodyHtml(data)}
     <div class="nav-row">
       <button class="secondary" onclick="loadRoadmapItem(${item - 1})" ${canPrev ? '' : 'disabled'}>${escapeHtml(t("carousel_prev"))}</button>
       <span class="nav-counter">${item} / ${total}</span>

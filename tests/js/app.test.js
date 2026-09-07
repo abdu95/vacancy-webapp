@@ -245,7 +245,7 @@ test("opening an application detail hides the screen-level back button; closing 
 // ── Roadmap: items append instead of replacing each other ───────────────
 
 const FAKE_ANALYSIS = {
-  limit_reached: false, remaining: 2, quota: 3, jd_text: "resolved jd text",
+  limit_reached: false, remaining: 2, quota: 3, jd_text: "resolved jd text", analysis_id: 42,
   ats: { score: 70, matched: ["SQL"], missing: ["dbt"], verdict: "Decent." },
   xyz: { passing: [], failing: [], rewrites: [] },
   tools: { SQL: "strong" },
@@ -354,6 +354,29 @@ test("Prev is disabled on the first item; Next is disabled on the last", async (
   await flush(5);
   assert.equal(navButtons()[0].disabled, false, "Prev must be enabled once past item 1");
   assert.equal(navButtons()[1].disabled, true, "Next must be disabled on the last item");
+});
+
+test("each roadmap-item request threads the analysis_id through, for My Checks history", async () => {
+  const seenAnalysisIds = [];
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cv-jd-analysis": () => FAKE_ANALYSIS,
+      "/api/roadmap-item": (body) => {
+        seenAnalysisIds.push(body.analysis_id);
+        return ROADMAP_RESPONSES[body.item];
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await runAnalysis(window, document);
+  window.startRoadmap();
+  await flush();
+  window.loadRoadmapItem(2);
+  await flush();
+  assert.deepEqual(seenAnalysisIds, [42, 42], "every roadmap-item call should carry the analysis_id from the initial analysis response");
 });
 
 // ── Post-roadmap flow: no more dead end ──────────────────────────────────
@@ -604,11 +627,122 @@ test("the tab bar is hidden during welcome/loading but visible everywhere else, 
   assert.equal(document.getElementById("tab-bar").hidden, false, "visible on cv-gate so users can navigate away mid-upload");
 });
 
-test("Profile's My Checks entry shows a coming-soon placeholder, not a dead link", async () => {
-  const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
+// ── My Checks (analysis history) ─────────────────────────────────────────
+
+const FAKE_CHECKS = [
+  {
+    id: 2,
+    jd_text: "Senior Data Analyst at Acme Corp, remote, own the whole reporting stack end to end.",
+    level: { assessment: "Mid" },
+    created_at: "2026-09-07T00:00:00",
+  },
+  {
+    id: 1,
+    jd_text: "Junior BI Developer",
+    level: { assessment: "Junior" },
+    created_at: "2026-09-01T00:00:00",
+  },
+];
+
+const FAKE_CHECK_DETAIL = {
+  id: 1,
+  jd_text: "Junior BI Developer",
+  ats: { score: 62, matched: ["SQL"], missing: ["Tableau"], verdict: "Decent start." },
+  xyz: { passing: [], failing: [], rewrites: [] },
+  tools: { SQL: "strong", Tableau: "not_found" },
+  level: { assessment: "Junior", reasoning: "Early career." },
+  roadmap_items: {
+    "1": { title: "CV Fixes", fixes: [{ issue: "No metrics", before: "Did dashboards", after: "Built 5 dashboards used by 3 teams" }] },
+    "2": { title: "Phone Screen Prep", text: "### Phone Screen Strategy\nOpening line: say hi." },
+  },
+  created_at: "2026-09-01T00:00:00",
+};
+
+test("My Checks list shows a JD preview, level, and date - each card opens its detail view", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: FAKE_CHECKS }),
+    }),
+  });
   await flush();
   const { document, window } = dom.window;
-  window.showMyChecksPlaceholder();
-  assert.equal(document.getElementById("my-checks-screen").hidden, false);
-  assert.match(document.getElementById("my-checks-coming-soon").textContent, /[Cc]oming soon/);
+  await window.showMyChecks();
+  const html = document.getElementById("my-checks-list").innerHTML;
+  assert.match(html, /Senior Data Analyst/);
+  assert.match(html, /Mid/);
+  assert.match(html, /openCheckDetail\(1\)/);
+});
+
+test("an empty check history shows an empty state, not a blank screen", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: [] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyChecks();
+  assert.match(document.getElementById("my-checks-list").innerHTML, /No checks yet/i);
+});
+
+test("opening a check's detail shows the full JD, ATS/XYZ/Tools/Level, and every saved roadmap item", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: FAKE_CHECKS }),
+      "/api/checks/get": () => FAKE_CHECK_DETAIL,
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyChecks();
+  await window.openCheckDetail(1);
+  const html = document.getElementById("my-checks-detail").innerHTML;
+  assert.match(html, /Junior BI Developer/);
+  assert.match(html, /62\/100/);
+  assert.match(html, /CV Fixes/);
+  assert.match(html, /Phone Screen Strategy/);
+  assert.equal(document.getElementById("my-checks-list-section").hidden, true, "list must hide while detail is open");
+});
+
+test("closing a check's detail restores the list", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: FAKE_CHECKS }),
+      "/api/checks/get": () => FAKE_CHECK_DETAIL,
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyChecks();
+  await window.openCheckDetail(1);
+  window.closeCheckDetail();
+  assert.equal(document.getElementById("my-checks-detail").hidden, true);
+  assert.equal(document.getElementById("my-checks-list-section").hidden, false);
+});
+
+test("deleting a check requires confirmation before calling the delete endpoint", async () => {
+  let deleteCalled = false;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: FAKE_CHECKS }),
+      "/api/checks/get": () => FAKE_CHECK_DETAIL,
+      "/api/checks/delete": () => { deleteCalled = true; return { deleted: true }; },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyChecks();
+  await window.openCheckDetail(1);
+
+  window.confirmDeleteCheck(1);
+  assert.equal(deleteCalled, false, "delete must not fire before confirmation");
+  assert.match(document.getElementById("check-detail-action-result").innerHTML, /deleteCheckNow\(1\)/);
+
+  await window.deleteCheckNow(1);
+  assert.equal(deleteCalled, true);
 });

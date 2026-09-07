@@ -81,7 +81,8 @@ with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
      mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)), \
      mock.patch.object(db, "increment_usage_count") as m_incr, \
-     mock.patch.object(db, "log_event") as m_log:
+     mock.patch.object(db, "log_event") as m_log, \
+     mock.patch.object(db, "save_analysis", return_value=99) as m_save:
     resp = client.post("/api/cv-jd-analysis", json={"init_data": init_data, "jd": "x" * 150})
     assert resp.status_code == 200, resp.text
     body = resp.json()
@@ -89,9 +90,24 @@ with mock.patch.object(db, "ensure_user"), \
     assert body["remaining"] == 1 and body["quota"] == 2
     assert body["ats"]["score"] == 72
     assert body["level"]["assessment"] == "Mid"
+    assert body["analysis_id"] == 99
     m_incr.assert_called_once_with(777)
     m_log.assert_called_once_with(777, "check_completed")
-print("PASS: a successful analysis increments usage once, logs check_completed (same name bot.py's /stats already reads), and returns the full outputs + quota")
+    m_save.assert_called_once_with(777, "x" * 150, FAKE_ANALYSIS["ats"], FAKE_ANALYSIS["xyz"], FAKE_ANALYSIS["tools"], FAKE_ANALYSIS["level"])
+print("PASS: a successful analysis increments usage once, logs check_completed (same name bot.py's /stats already reads), saves it to history, and returns the full outputs + quota + analysis_id")
+
+# --- Test 4b: saving to history failing doesn't break the analysis response itself ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(db, "get_quota_status", side_effect=[(0, 2), (1, 2)]), \
+     mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)), \
+     mock.patch.object(db, "increment_usage_count"), \
+     mock.patch.object(db, "log_event"), \
+     mock.patch.object(db, "save_analysis", side_effect=Exception("db down")):
+    resp = client.post("/api/cv-jd-analysis", json={"init_data": init_data, "jd": "x" * 150})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["analysis_id"] is None
+print("PASS: a failed history-save still returns the analysis itself, just with analysis_id=None")
 
 # --- Test 5: analysis failure doesn't increment usage ---
 with mock.patch.object(db, "ensure_user"), \
@@ -154,6 +170,44 @@ with mock.patch.object(db, "ensure_user"), \
     assert body["is_last"] is True
 print("PASS: Pre-Junior's 3-item roadmap ends at item 3, with different content than Junior")
 
+# --- Test 8b: roadmap-item with an analysis_id saves the item into that analysis's history ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(cv_analysis, "generate_cv_fixes", new=mock.AsyncMock(
+         return_value=[{"issue": "x", "before": "", "after": "y"}])), \
+     mock.patch.object(db, "log_event"), \
+     mock.patch.object(db, "save_roadmap_item", return_value=True) as m_save_item:
+    resp = client.post("/api/roadmap-item", json={
+        "init_data": init_data, "jd": "x" * 150, "level": "Junior", "item": 1, "analysis_id": 99,
+    })
+    assert resp.status_code == 200, resp.text
+    m_save_item.assert_called_once_with(777, 99, 1, "CV Fixes", {"fixes": [{"issue": "x", "before": "", "after": "y"}]})
+print("PASS: roadmap-item with an analysis_id saves the item into that analysis's roadmap_items")
+
+# --- Test 8c: roadmap-item with no analysis_id (e.g. old client, or history-save failed earlier) skips saving ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(return_value="### Target Companies\n...")), \
+     mock.patch.object(db, "save_roadmap_item") as m_save_item:
+    resp = client.post("/api/roadmap-item", json={
+        "init_data": init_data, "jd": "x" * 150, "level": "Junior", "item": 4,
+    })
+    assert resp.status_code == 200, resp.text
+    m_save_item.assert_not_called()
+print("PASS: roadmap-item without an analysis_id doesn't attempt to save to history")
+
+# --- Test 8d: a failed history-save still returns the roadmap item itself ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
+     mock.patch.object(cv_analysis, "generate_roadmap_item", new=mock.AsyncMock(return_value="### Target Companies\n...")), \
+     mock.patch.object(db, "save_roadmap_item", side_effect=Exception("db down")):
+    resp = client.post("/api/roadmap-item", json={
+        "init_data": init_data, "jd": "x" * 150, "level": "Junior", "item": 4, "analysis_id": 99,
+    })
+    assert resp.status_code == 200, resp.text
+    assert "Target Companies" in resp.json()["text"]
+print("PASS: a failed history-save on a roadmap item still returns the item itself")
+
 # --- Test 9: quota-status reports remaining/quota/price ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_quota_status", return_value=(1, 3)):
@@ -196,7 +250,8 @@ with mock.patch.object(db, "ensure_user"), \
          return_value="Extracted job posting text " * 10)) as m_fetch, \
      mock.patch.object(cv_analysis, "analyze_cv", new=mock.AsyncMock(return_value=FAKE_ANALYSIS)) as m_analyze, \
      mock.patch.object(db, "increment_usage_count"), \
-     mock.patch.object(db, "log_event"):
+     mock.patch.object(db, "log_event"), \
+     mock.patch.object(db, "save_analysis", return_value=1):
     resp = client.post("/api/cv-jd-analysis", json={
         "init_data": init_data, "jd": "https://boards.greenhouse.io/acme/jobs/123",
     })

@@ -322,6 +322,39 @@ async def delete_application(req: DeleteApplicationRequest):
     return {"deleted": True}
 
 
+class ChecksRequest(BaseModel):
+    init_data: str
+
+
+@app.post("/api/checks")
+async def list_checks(req: ChecksRequest):
+    user = authenticate(req.init_data)
+    return {"checks": db.list_analyses(user["id"])}
+
+
+class GetCheckRequest(BaseModel):
+    init_data: str
+    analysis_id: int
+
+
+@app.post("/api/checks/get")
+async def get_check(req: GetCheckRequest):
+    user = authenticate(req.init_data)
+    analysis = db.get_analysis(user["id"], req.analysis_id)
+    if not analysis:
+        raise HTTPException(404, "Check not found")
+    return analysis
+
+
+@app.post("/api/checks/delete")
+async def delete_check(req: GetCheckRequest):
+    user = authenticate(req.init_data)
+    found = db.delete_analysis(user["id"], req.analysis_id)
+    if not found:
+        raise HTTPException(404, "Check not found")
+    return {"deleted": True}
+
+
 class AnalyzeRequest(BaseModel):
     init_data: str
     jd: str
@@ -362,7 +395,19 @@ async def cv_jd_analysis(req: AnalyzeRequest):
     db.log_event(user["id"], "check_completed")
     usage_count, quota = db.get_quota_status(user["id"])
     remaining = max(0, quota - usage_count)
-    return {"limit_reached": False, "remaining": remaining, "quota": quota, "jd_text": jd_text, **outputs}
+
+    try:
+        analysis_id = db.save_analysis(
+            user["id"], jd_text, outputs["ats"], outputs["xyz"], outputs["tools"], outputs["level"]
+        )
+    except Exception:
+        logger.exception("Saving analysis to history failed - the analysis itself still succeeded")
+        analysis_id = None
+
+    return {
+        "limit_reached": False, "remaining": remaining, "quota": quota,
+        "jd_text": jd_text, "analysis_id": analysis_id, **outputs,
+    }
 
 
 class RoadmapItemRequest(BaseModel):
@@ -370,6 +415,7 @@ class RoadmapItemRequest(BaseModel):
     jd: str
     level: str
     item: int
+    analysis_id: int | None = None
 
 
 @app.post("/api/roadmap-item")
@@ -387,12 +433,22 @@ async def roadmap_item(req: RoadmapItemRequest):
     try:
         if title == "CV Fixes":
             fixes = await cv_analysis.generate_cv_fixes(req.level, req.jd, cv_text)
-            return {"title": title, "fixes": fixes, "is_last": req.item >= max_item}
-        text = await cv_analysis.generate_roadmap_item(req.level, req.item, req.jd, cv_text)
-        return {"title": title, "text": text, "is_last": req.item >= max_item}
+            result = {"title": title, "fixes": fixes, "is_last": req.item >= max_item}
+        else:
+            text = await cv_analysis.generate_roadmap_item(req.level, req.item, req.jd, cv_text)
+            result = {"title": title, "text": text, "is_last": req.item >= max_item}
     except Exception:
         logger.exception("Roadmap item generation failed")
         raise HTTPException(502, "Couldn't generate this section, try again")
+
+    if req.analysis_id is not None:
+        try:
+            body = {"fixes": result["fixes"]} if "fixes" in result else {"text": result["text"]}
+            db.save_roadmap_item(user["id"], req.analysis_id, req.item, title, body)
+        except Exception:
+            logger.exception("Saving roadmap item to history failed - the item itself still succeeded")
+
+    return result
 
 
 class QuotaStatusRequest(BaseModel):

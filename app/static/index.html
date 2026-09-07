@@ -56,7 +56,7 @@
     <button class="menu-option" onclick="showMyCvs()">
       <div id="profile-my-cvs-label"></div>
     </button>
-    <button class="menu-option" onclick="showMyChecksPlaceholder()">
+    <button class="menu-option" onclick="showMyChecks()">
       <div id="profile-my-checks-label"></div>
     </button>
     <button class="menu-option" onclick="showApplications()">
@@ -84,7 +84,10 @@
       <div class="hint" id="my-checks-title"></div>
       <button id="btn-my-checks-back" class="back-btn" onclick="showProfile()"></button>
     </div>
-    <div class="hint" id="my-checks-coming-soon"></div>
+    <div id="my-checks-list-section">
+      <div id="my-checks-list"></div>
+    </div>
+    <div id="my-checks-detail" hidden></div>
   </div>
 
   <div id="analysis-screen" hidden>
