@@ -329,9 +329,9 @@ const I18N = {
   tab_profile_label: { en: "Profile", uz: "Profil", ru: "Профиль" },
   checks_title: { en: "Checks", uz: "Tekshiruvlar", ru: "Проверки" },
   my_checks_empty: {
-    en: "No checks yet — analyze your CV against a job to see it here.",
-    uz: "Hali tekshiruv yo'q — CV'ingizni ish e'loniga solishtiring, u shu yerda ko'rinadi.",
-    ru: "Проверок пока нет — сравните резюме с вакансией, и она появится здесь.",
+    en: "You haven't checked a CV yet. To see an analysis here, first analyze your CV against a job:",
+    uz: "Siz hali CV tekshiruvidan o'tmagansiz. Tahlilni shu yerda ko'rish uchun avval CV'ingizni ish e'loniga solishtiring:",
+    ru: "Вы ещё не проверяли резюме. Чтобы увидеть анализ здесь, сначала сравните резюме с вакансией:",
   },
   my_checks_load_failed: {
     en: "Couldn't load your checks.", uz: "Tekshiruvlaringizni yuklab bo'lmadi.", ru: "Не удалось загрузить ваши проверки.",
@@ -640,7 +640,10 @@ function jdPreview(jdText) {
 function renderMyChecksList() {
   const listEl = document.getElementById("my-checks-list");
   if (allChecks.length === 0) {
-    listEl.innerHTML = `<div class="hint">${escapeHtml(t("my_checks_empty"))}</div>`;
+    listEl.innerHTML = `
+      <div class="prompt-block">${escapeHtml(t("my_checks_empty"))}</div>
+      <button onclick="goToAnalysis()">${escapeHtml(t("home_analyze_option"))}</button>
+    `;
     return;
   }
   listEl.innerHTML = allChecks.map(c => `

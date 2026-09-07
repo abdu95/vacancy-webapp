@@ -674,7 +674,7 @@ test("My Checks list shows a JD preview, level, and date - each card opens its d
   assert.match(html, /openCheckDetail\(1\)/);
 });
 
-test("an empty check history shows an empty state, not a blank screen", async () => {
+test("an empty check history explains why and offers a button straight into the analysis flow", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({
       "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
@@ -684,7 +684,12 @@ test("an empty check history shows an empty state, not a blank screen", async ()
   await flush();
   const { document, window } = dom.window;
   await window.showMyChecks();
-  assert.match(document.getElementById("my-checks-list").innerHTML, /No checks yet/i);
+  const html = document.getElementById("my-checks-list").innerHTML;
+  assert.match(html, /haven't checked a CV yet/i);
+  assert.match(html, /onclick="goToAnalysis\(\)"/);
+
+  window.document.getElementById("my-checks-list").querySelector("button").click();
+  assert.equal(document.getElementById("analysis-screen").hidden, false, "the CTA button must actually navigate to the analysis screen");
 });
 
 test("opening a check's detail shows the full JD, ATS/XYZ/Tools/Level, and every saved roadmap item", async () => {
