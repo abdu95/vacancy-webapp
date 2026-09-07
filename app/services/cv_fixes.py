@@ -10,6 +10,13 @@ Pre-Junior's item 1 is a "3-Month Plan", not "CV Fixes" - passing
 Falls back to the Junior prompt instead (same fallback bot/coach.py's own
 ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"]) uses for any
 unrecognized level).
+
+The Junior/Mid/Senior "gap analysis" CONTEXT blocks below are the same ones
+cv_analysis.py's roadmap uses (app/prompts/analysis.py's ROADMAP_*_CONTEXT) -
+imported from there rather than duplicated locally, after an audit
+(2026-09-07) found this file had its own byte-for-byte copy that could
+silently drift from the canonical one. Only the item template around it
+(and this feature's own single-vacancy framing) differs.
 """
 
 import os
@@ -17,56 +24,17 @@ import os
 import anthropic
 from dotenv import load_dotenv
 
+from app.prompts.analysis import (
+    ROADMAP_JUNIOR_CONTEXT as _JUNIOR_CONTEXT,
+    ROADMAP_MID_CONTEXT as _MID_CONTEXT,
+    ROADMAP_SENIOR_CONTEXT as _SENIOR_CONTEXT,
+)
 from app.services.ai_utils import extract_json
 
 load_dotenv()
 
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL = "claude-sonnet-4-5"
-
-_JUNIOR_CONTEXT = """
-CONTEXT:
-- First identify the target role from the JD.
-- Candidate level: Junior (0-2 years production experience in this role's domain)
-- Your task: identify the gap between what the JD requires and what the CV demonstrates,
-  then close that gap at Junior depth.
-
-GAP ANALYSIS RULES:
-- Only give advice tied to a specific missing skill or weakness relative to THIS JD
-- Do not give generic advice — every recommendation must reference something the JD requires
-  that the CV lacks
-- Prioritise gaps by hiring impact: what would make or break getting this specific role
-- Be honest about what is missing — do not soften gaps
-"""
-
-_MID_CONTEXT = """
-CONTEXT:
-- First identify the target role from the JD.
-- Candidate level: Mid (2-4 years production experience in this role's domain)
-- Your task: identify the gap between what the JD requires and what the CV demonstrates,
-  then close that gap at Mid depth.
-
-GAP ANALYSIS RULES:
-- Only give advice tied to specific missing skills or weaknesses relative to THIS JD
-- Do not give generic advice — every recommendation grounded in a JD requirement the CV lacks
-- Prioritise gaps by hiring impact: ownership, stakeholder communication, depth of craft
-- At Mid level, gaps are often about demonstrating ownership and impact, not just tool knowledge
-"""
-
-_SENIOR_CONTEXT = """
-CONTEXT:
-- First identify the target role from the JD.
-- Candidate level: Senior (4+ years production experience in this role's domain)
-- Your task: identify the gap between what the JD requires and what the CV demonstrates,
-  then close that gap at Senior depth.
-
-GAP ANALYSIS RULES:
-- Only give advice tied to specific missing signals relative to THIS JD
-- At Senior level, gaps are usually about strategic scope, leadership narrative, and
-  cross-org impact rather than tool knowledge - identify which type of gap this candidate has
-- Do not give generic advice — reference specific JD requirements and specific CV weaknesses
-- Be direct: if the CV reads like a Mid candidate, say so and fix it
-"""
 
 _ITEM_TEMPLATE = """
 The candidate's CV and the target job description (JD) are provided.
