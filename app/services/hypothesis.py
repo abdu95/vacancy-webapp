@@ -4,12 +4,12 @@ see vacancy_source.py's docstring for why). Mirrors bot/coach.py's
 suggest_job_titles exactly.
 """
 
-import json
 import os
-import re
 
 import anthropic
 from dotenv import load_dotenv
+
+from app.services.ai_utils import extract_json
 
 load_dotenv()
 
@@ -26,16 +26,15 @@ Example: ["Data Analyst", "Analytics Engineer", "Data Engineer", "BI Developer",
 
 
 async def suggest_job_titles(cv_text: str) -> list:
+    # No temperature pin here on purpose - the "suggest again" button in the
+    # UI expects a genuinely different set of 5 titles on each click, not the
+    # same ones deterministically.
     response = await client.messages.create(
         model=MODEL,
         max_tokens=200,
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{JOB_TITLE_PROMPT}"}],
     )
-    text = response.content[0].text
-    match = re.search(r'\[.*\]', text, re.DOTALL)
-    if not match:
-        raise ValueError(f"No JSON array found in response: {text[:200]}")
-    return json.loads(match.group(0))
+    return extract_json(response.content[0].text, array=True)
 
 
 CURRENT_POSITION_PROMPT = """
@@ -50,10 +49,12 @@ quotes, no explanation. Example: Data Analyst
 
 async def extract_current_position(cv_text: str) -> str:
     """Best-effort label for a CV in a list (e.g. 'Data Analyst') - not a
-    recommendation like suggest_job_titles, just what's already on the CV."""
+    recommendation like suggest_job_titles, just what's already on the CV, so
+    (unlike suggest_job_titles) this should be consistent, not creative."""
     response = await client.messages.create(
         model=MODEL,
         max_tokens=30,
+        temperature=0.3,
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{CURRENT_POSITION_PROMPT}"}],
     )
     return response.content[0].text.strip().strip('"')

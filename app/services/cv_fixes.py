@@ -12,12 +12,12 @@ ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"]) uses for any
 unrecognized level).
 """
 
-import json
 import os
-import re
 
 import anthropic
 from dotenv import load_dotenv
+
+from app.services.ai_utils import extract_json
 
 load_dotenv()
 
@@ -110,7 +110,4 @@ async def generate_cv_fixes(level: str, vacancy: dict, cv_text: str) -> list:
         }],
     )
     text = response.content[0].text
-    match = re.search(r'\[.*\]', text, re.DOTALL)
-    if not match:
-        raise ValueError(f"No JSON array found in response: {text[:200]}")
-    return json.loads(match.group(0))
+    return extract_json(text, array=True)

@@ -11,14 +11,13 @@ lighter feature); this generate_cv_fixes(level, jd, cv_text) is roadmap item 1
 of the full JD-analysis flow. Both are kept, not merged.
 """
 
-import json
 import os
-import re
 
 import anthropic
 from dotenv import load_dotenv
 
 from app.prompts.analysis import ANALYSIS_PROMPT, ROADMAP_BLOCKS
+from app.services.ai_utils import extract_json, verify_keywords
 
 load_dotenv()
 
@@ -26,25 +25,22 @@ client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 MODEL = "claude-sonnet-4-5"
 
 
-def _extract_json(text: str, array: bool = False):
-    pattern = r'\[.*\]' if array else r'\{.*\}'
-    match = re.search(pattern, text, re.DOTALL)
-    if not match:
-        raise ValueError(f"No JSON found in response: {text[:200]}")
-    return json.loads(match.group(0))
-
-
 async def analyze_cv(jd: str, cv_text: str) -> dict:
     """Full analysis: ats, xyz, tools, level."""
     response = await client.messages.create(
         model=MODEL,
         max_tokens=2000,
+        temperature=0.3,
         messages=[{
             "role": "user",
             "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd}\n\n{ANALYSIS_PROMPT}"
         }]
     )
-    return _extract_json(response.content[0].text)
+    result = extract_json(response.content[0].text)
+    result["ats"]["matched"], result["ats"]["missing"] = verify_keywords(
+        cv_text, result["ats"].get("matched", []), result["ats"].get("missing", [])
+    )
+    return result
 
 
 def roadmap_block_title(level: str, item: int) -> str:
@@ -71,7 +67,7 @@ async def generate_cv_fixes(level: str, jd: str, cv_text: str) -> list:
         }]
     )
     text = "".join(b.text for b in response.content if b.type == "text")
-    return _extract_json(text, array=True)
+    return extract_json(text, array=True)
 
 
 async def generate_roadmap_item(level: str, item: int, jd: str, cv_text: str) -> str:

@@ -4,12 +4,12 @@ see vacancy_source.py's docstring for why). Mirrors bot/coach.py's
 score_vacancy exactly.
 """
 
-import json
 import os
-import re
 
 import anthropic
 from dotenv import load_dotenv
+
+from app.services.ai_utils import extract_json, verify_keywords
 
 load_dotenv()
 
@@ -36,13 +36,14 @@ async def score_vacancy(cv_text: str, vacancy: dict) -> dict:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=400,
+        temperature=0.3,
         messages=[{
             "role": "user",
             "content": f"CV:\n{cv_text}\n\nJOB DESCRIPTION:\n{jd_text}\n\n{VACANCY_SCORE_PROMPT}"
         }],
     )
-    text = response.content[0].text
-    match = re.search(r'\{.*\}', text, re.DOTALL)
-    if not match:
-        raise ValueError(f"No JSON object found in response: {text[:200]}")
-    return json.loads(match.group(0))
+    result = extract_json(response.content[0].text)
+    result["matched"], result["missing"] = verify_keywords(
+        cv_text, result.get("matched", []), result.get("missing", [])
+    )
+    return result
