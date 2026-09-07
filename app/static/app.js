@@ -344,7 +344,17 @@ const I18N = {
   vacancy_alerts_needs_title: {
     en: "Set a job title before turning on alerts.", uz: "Bildirishnomalarni yoqishdan oldin lavozim nomini kiriting.", ru: "Прежде чем включить уведомления, укажите должность.",
   },
-  vacancy_alerts_saved: { en: "Saved.", uz: "Saqlandi.", ru: "Сохранено." },
+  vacancy_alerts_where_suffix: { en: " in {location}", uz: " ({location})", ru: " в {location}" },
+  vacancy_alerts_saved_on: {
+    en: 'Saved. We\'ll message you here about new "{job_title}" vacancies{where} - about once a day, around 09:00 (Tashkent time).',
+    uz: 'Saqlandi. Yangi "{job_title}" vakansiyalari{where} haqida sizga shu yerda xabar beramiz - kuniga taxminan bir marta, soat 09:00 atrofida (Toshkent vaqti).',
+    ru: 'Сохранено. Мы напишем вам сюда о новых вакансиях "{job_title}"{where} - примерно раз в день, около 09:00 (по ташкентскому времени).',
+  },
+  vacancy_alerts_saved_off: {
+    en: 'Saved. Alerts are currently off for "{job_title}" - turn on the toggle above if you want to be notified.',
+    uz: '"{job_title}" uchun bildirishnomalar hozircha o\'chiq - xabar olishni istasangiz, yuqoridagi tugmachani yoqing.',
+    ru: 'Сохранено. Уведомления для "{job_title}" сейчас выключены - включите переключатель выше, если хотите получать уведомления.',
+  },
   tab_home_label: { en: "Home", uz: "Bosh sahifa", ru: "Главная" },
   tab_search_label: { en: "Search", uz: "Qidirish", ru: "Поиск" },
   tab_analyze_label: { en: "Analyze", uz: "Tahlil", ru: "Анализ" },
@@ -798,7 +808,13 @@ async function saveVacancyAlerts() {
   resultEl.innerHTML = `<div class="hint">${escapeHtml(t("saving"))}</div>`;
   try {
     await callApi("/api/saved-search/save", { job_title: jobTitle, location, alerts_enabled: alertsEnabled });
-    resultEl.innerHTML = `<div class="hint">${escapeHtml(t("vacancy_alerts_saved"))}</div>`;
+    const message = alertsEnabled
+      ? t("vacancy_alerts_saved_on", {
+          job_title: jobTitle,
+          where: location ? t("vacancy_alerts_where_suffix", { location }) : "",
+        })
+      : t("vacancy_alerts_saved_off", { job_title: jobTitle });
+    resultEl.innerHTML = `<div class="hint">${escapeHtml(message)}</div>`;
   } catch (err) {
     console.error("Saving alert settings failed:", err);
     resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("vacancy_alerts_save_failed")))}</div>`;

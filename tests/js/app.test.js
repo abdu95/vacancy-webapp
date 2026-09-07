@@ -822,7 +822,51 @@ test("saving valid alert settings calls the API with the trimmed values and conf
   assert.equal(savedBody.job_title, "Data Analyst");
   assert.equal(savedBody.location, "Tashkent");
   assert.equal(savedBody.alerts_enabled, true);
-  assert.match(document.getElementById("vacancy-alerts-result").innerHTML, /Saved/);
+  const html = document.getElementById("vacancy-alerts-result").innerHTML;
+  assert.match(html, /Data Analyst/, "confirmation must repeat back which job title was saved");
+  assert.match(html, /Tashkent/, "confirmation must repeat back which location was saved");
+  assert.match(html, /once a day/i, "confirmation must say how often alerts fire");
+  assert.match(html, /09:00/, "confirmation must say roughly when alerts fire");
+});
+
+test("saving with alerts off confirms without implying a notification schedule", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+      "/api/saved-search/save": () => ({ saved: true }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showVacancyAlerts();
+  document.getElementById("alerts_job_title").value = "Data Analyst";
+  document.getElementById("alerts_enabled_toggle").checked = false;
+  await window.saveVacancyAlerts();
+  const html = document.getElementById("vacancy-alerts-result").innerHTML;
+  assert.match(html, /Data Analyst/);
+  assert.match(html, /off/i);
+  assert.ok(!html.includes("once a day"), "must not claim a notification schedule when alerts are off");
+});
+
+test("saving with no location doesn't leave a dangling 'in' in the confirmation", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+      "/api/saved-search/save": () => ({ saved: true }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showVacancyAlerts();
+  document.getElementById("alerts_job_title").value = "Data Analyst";
+  document.getElementById("alerts_location").value = "";
+  document.getElementById("alerts_enabled_toggle").checked = true;
+  await window.saveVacancyAlerts();
+  const html = document.getElementById("vacancy-alerts-result").innerHTML;
+  assert.match(html, /Data Analyst/);
+  assert.ok(!/\bin\s*,/.test(html) && !html.includes(" in -"), "an empty location must not leave a dangling 'in'");
 });
 
 test("Vacancy Alerts is reachable as Profile's 4th menu item and highlights the Profile tab", async () => {
