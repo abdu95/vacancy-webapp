@@ -46,6 +46,25 @@ test("checksLabel pluralizes in English", async () => {
   assert.equal(window.checksLabel(5), "5 checks");
 });
 
+test("checksLabel and freeChecksLine use Russian's real 3-form plural rule, not a simple one/other split", async () => {
+  const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "ru" }) }) });
+  await flush();
+  const { window } = dom;
+  // 1 -> nominative singular ("проверка"); 2-4 -> "few" ("проверки");
+  // 5+ (and 11-14, which are irregular exceptions to the 2-4 rule) -> "проверок"
+  assert.equal(window.checksLabel(1), "1 проверка");
+  assert.equal(window.checksLabel(2), "2 проверки");
+  assert.equal(window.checksLabel(3), "3 проверки");
+  assert.equal(window.checksLabel(4), "4 проверки");
+  assert.equal(window.checksLabel(5), "5 проверок");
+  assert.equal(window.checksLabel(11), "11 проверок", "11-14 are exceptions to the 2-4 rule even though they end in 1-4");
+  assert.equal(window.checksLabel(21), "21 проверка", "21 ends in 1 (and isn't 11) - back to the singular form");
+
+  assert.match(window.freeChecksLine(1), /осталась 1 бесплатная проверка/);
+  assert.match(window.freeChecksLine(2), /осталось 2 бесплатные проверки/);
+  assert.match(window.freeChecksLine(6), /осталось 6 бесплатных проверок/);
+});
+
 test("formatRoadmapText converts markdown headers/bold and escapes raw HTML", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock() });
   await flush();

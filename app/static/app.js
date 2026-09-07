@@ -305,8 +305,24 @@ const I18N = {
   checkout_failed: {
     en: "Couldn't start checkout, try again.", uz: "To'lovni boshlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось начать оплату, попробуйте снова.",
   },
-  checks_word: { en: "checks", uz: "ta tekshiruv", ru: "проверок" },
-  check_word_one: { en: "check", uz: "ta tekshiruv", ru: "проверка" },
+  checks_word_one: { en: "check", uz: "ta tekshiruv", ru: "проверка" },
+  checks_word_few: { en: "checks", uz: "ta tekshiruv", ru: "проверки" },
+  checks_word_many: { en: "checks", uz: "ta tekshiruv", ru: "проверок" },
+  free_checks_left_one: {
+    en: "You have {remaining} free check left.",
+    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
+    ru: "У вас осталась {remaining} бесплатная проверка.",
+  },
+  free_checks_left_few: {
+    en: "You have {remaining} free checks left.",
+    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
+    ru: "У вас осталось {remaining} бесплатные проверки.",
+  },
+  free_checks_left_many: {
+    en: "You have {remaining} free checks left.",
+    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
+    ru: "У вас осталось {remaining} бесплатных проверок.",
+  },
   welcome_body: {
     en: "👋 Welcome to AcceptedAI. I help you get accepted into your dream job — analyze your CV against a job description, or find and track vacancies.",
     uz: "👋 AcceptedAI'ga xush kelibsiz. Men sizga orzuingizdagi ishga qabul qilinishda yordam beraman — CV'ingizni ish e'loniga solishtiring yoki vakansiyalarni toping va kuzating.",
@@ -314,11 +330,6 @@ const I18N = {
   },
   welcome_continue_btn: { en: "Get started →", uz: "Boshlash →", ru: "Начать →" },
   profile_title: { en: "Profile", uz: "Profil", ru: "Профиль" },
-  profile_checks_line: {
-    en: "You have {remaining} free checks left.",
-    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
-    ru: "У вас осталось {remaining} бесплатных проверок.",
-  },
   profile_buy_more_btn: { en: "💳 Buy more checks", uz: "💳 Ko'proq tekshiruv sotib olish", ru: "💳 Купить ещё проверок" },
   profile_my_cvs_btn: { en: "📄 My CVs", uz: "📄 Mening CV'larim", ru: "📄 Мои резюме" },
   profile_applications_btn: { en: "📋 My Applications", uz: "📋 Arizalarim", ru: "📋 Мои заявки" },
@@ -389,11 +400,6 @@ const I18N = {
     en: "You're out of free checks. Buy more to analyze another job:",
     uz: "Bepul tekshiruvlaringiz tugadi. Boshqa ish e'lonini tahlil qilish uchun ko'proq sotib oling:",
     ru: "У вас закончились бесплатные проверки. Купите ещё, чтобы проанализировать другую вакансию:",
-  },
-  post_roadmap_checks_left: {
-    en: "You have {remaining} free checks left.",
-    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
-    ru: "У вас осталось {remaining} бесплатных проверок.",
   },
   analyze_another_btn: {
     en: "📊 Analyze another job", uz: "📊 Boshqa ish e'lonini tahlil qilish", ru: "📊 Проанализировать другую вакансию",
@@ -631,7 +637,7 @@ async function showChecksScreen() {
     updateChecksHeader(q.remaining, q.quota);
     contentEl.innerHTML = `
       <div class="card">
-        <div>${escapeHtml(t("profile_checks_line", { remaining: q.remaining }))}</div>
+        <div>${escapeHtml(freeChecksLine(q.remaining))}</div>
       </div>
     `;
     if (q.remaining <= 0) {
@@ -1759,7 +1765,7 @@ async function renderRoadmapDone(nextEl) {
       await renderBuyChecks(buyBox);
     } else {
       box.innerHTML = `
-        <div class="prompt-block">${escapeHtml(t("post_roadmap_checks_left", { remaining: q.remaining }))}</div>
+        <div class="prompt-block">${escapeHtml(freeChecksLine(q.remaining))}</div>
         <button onclick="goToAnalysis()">${escapeHtml(t("analyze_another_btn"))}</button>
       `;
     }
@@ -1770,9 +1776,29 @@ async function renderRoadmapDone(nextEl) {
   scrollToBottom();
 }
 
+// Russian needs 3 plural forms (1 проверка / 2 проверки / 5 проверок),
+// not the simple one/other split English and Uzbek get away with -
+// English still needs *a* split (1 check vs N checks), Uzbek needs
+// none (no grammatical number agreement on nouns after numerals).
+// Returns a CLDR-style category name matching the *_one/_few/_many
+// i18n key suffixes below.
+function pluralCategory(n) {
+  if (currentLang === "ru") {
+    const mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return "one";
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "few";
+    return "many";
+  }
+  return n === 1 ? "one" : "many";
+}
+
+function freeChecksLine(n) {
+  return t(`free_checks_left_${pluralCategory(n)}`, { remaining: n });
+}
+
 // ── Buy checks (flexible pay-per-check pricing) ──────────────────────
 function checksLabel(n) {
-  return n === 1 ? `1 ${t("check_word_one")}` : `${n} ${t("checks_word")}`;
+  return `${n} ${t(`checks_word_${pluralCategory(n)}`)}`;
 }
 
 async function renderBuyChecks(containerEl) {
