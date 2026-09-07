@@ -5,8 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import greenhouse_source as gs  # noqa: E402
-import db  # noqa: E402
+from app.services import greenhouse_source as gs  # noqa: E402
+from app import db  # noqa: E402
 
 FAKE_JOBS_BY_COMPANY = {
     "stripe": [

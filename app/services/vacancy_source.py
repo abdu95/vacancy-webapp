@@ -7,7 +7,7 @@ what this trades off (small hand-verified company list, no industry
 filter yet).
 """
 
-import greenhouse_source
+from app.services import greenhouse_source
 
 
 async def search_vacancies(job_title: str, location: str, work_setup: str,

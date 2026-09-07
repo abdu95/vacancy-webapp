@@ -14,7 +14,7 @@ os.environ["ANTHROPIC_API_KEY"] = "dummy"
 os.environ["DATABASE_URL"] = "postgresql://fake"
 
 import server  # noqa: E402
-import db  # noqa: E402
+from app import db  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 TOKEN = "dummy:token"
@@ -57,8 +57,8 @@ assert resp.status_code == 401, resp.text
 print("PASS: cv-status rejects tampered signature")
 
 # --- Test 4: upload-cv with a fake PDF -> parses, extracts position, adds as a new (active) CV ---
-import cv_parser  # noqa: E402
-import hypothesis  # noqa: E402
+from app.services import cv_parser  # noqa: E402
+from app.services import hypothesis  # noqa: E402
 with mock.patch.object(db, "ensure_user") as m_ensure, \
      mock.patch.object(db, "add_cv") as m_add, \
      mock.patch.object(db, "log_event") as m_log, \
@@ -117,7 +117,7 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: upload-cv rejects empty-text extraction")
 
 # --- Test 7: suggest-titles with a CV on file -> returns titles ---
-import hypothesis  # noqa: E402
+from app.services import hypothesis  # noqa: E402
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(hypothesis, "suggest_job_titles", new=mock.AsyncMock(
@@ -135,7 +135,7 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: suggest-titles requires a CV on file")
 
 # --- Test 9: search passes seen_companies through to vacancy_source ---
-import vacancy_source  # noqa: E402
+from app.services import vacancy_source  # noqa: E402
 with mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(return_value=[])) as m_search:
     resp = client.post("/api/search", json={
         "init_data": init_data, "job_title": "Data Analyst", "location": "Remote",
@@ -151,7 +151,7 @@ TEST_VACANCY = {
 }
 
 # --- Test 10: score-vacancy uses on-file CV, returns score dict ---
-import scoring  # noqa: E402
+from app.services import scoring  # noqa: E402
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(scoring, "score_vacancy", new=mock.AsyncMock(
@@ -169,7 +169,7 @@ with mock.patch.object(db, "ensure_user"), mock.patch.object(db, "get_active_cv_
 print("PASS: score-vacancy requires a CV on file")
 
 # --- Test 12: cv-recommendations passes level through correctly ---
-import cv_fixes  # noqa: E402
+from app.services import cv_fixes  # noqa: E402
 fake_fixes = [{"issue": "x", "before": "y", "after": "z"}] * 5
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \

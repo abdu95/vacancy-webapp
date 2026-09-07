@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 os.environ.setdefault("DATABASE_URL", "postgresql://fake")
 
-import db  # noqa: E402
+from app import db  # noqa: E402
 
 
 def make_fake_pool(rows):

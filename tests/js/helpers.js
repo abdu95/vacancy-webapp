@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { JSDOM } = require("jsdom");
 
-const STATIC_DIR = path.resolve(__dirname, "..", "static");
+const STATIC_DIR = path.resolve(__dirname, "..", "..", "app", "static");
 
 /**
  * Loads the REAL index.html + app.js (not a rewritten copy) into a jsdom

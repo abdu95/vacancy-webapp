@@ -5,7 +5,7 @@ see vacancy_source.py's docstring for why). Mirrors bot/coach.py's
 analyze_cv/generate_cv_fixes/generate_roadmap/roadmap_block_title/
 roadmap_max_item exactly, using analysis_prompts.py in place of bot/prompts.py.
 
-Distinct from webapp/cv_fixes.py's generate_cv_fixes(level, vacancy, cv_text)
+Distinct from app/services/cv_fixes.py's generate_cv_fixes(level, vacancy, cv_text)
 - that one rewrites a CV against one already-found vacancy (a different,
 lighter feature); this generate_cv_fixes(level, jd, cv_text) is roadmap item 1
 of the full JD-analysis flow. Both are kept, not merged.
@@ -18,7 +18,7 @@ import re
 import anthropic
 from dotenv import load_dotenv
 
-from analysis_prompts import ANALYSIS_PROMPT, ROADMAP_BLOCKS
+from app.prompts.analysis import ANALYSIS_PROMPT, ROADMAP_BLOCKS
 
 load_dotenv()
 

@@ -13,7 +13,7 @@ os.environ["ANTHROPIC_API_KEY"] = "dummy"
 os.environ["DATABASE_URL"] = "postgresql://fake"
 
 import server  # noqa: E402
-import db  # noqa: E402
+from app import db  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 TOKEN = "dummy:token"

@@ -1,18 +1,18 @@
 """
-Syncs webapp/scripts/greenhouse_companies.csv into the `greenhouse_companies`
+Syncs scripts/greenhouse_companies.csv into the `greenhouse_companies`
 table: upserts every row in the CSV (active=true), and deactivates
 (active=false, never deletes - keeps history of what was tried) any DB
 row whose slug is no longer in the CSV.
 
 Run this after editing the CSV to add/remove/rename a verified
-company. Takes effect within webapp/db.py's get_active_companies()
+company. Takes effect within app/db.py's get_active_companies()
 cache TTL (10 minutes) - no deploy needed.
 
 Usage:
     DATABASE_URL=postgresql://... python3 scripts/sync_greenhouse_companies.py [path/to/csv]
 
 If no path is given, defaults to greenhouse_companies.csv next to this
-script (webapp/scripts/greenhouse_companies.csv).
+script (scripts/greenhouse_companies.csv).
 """
 
 import csv

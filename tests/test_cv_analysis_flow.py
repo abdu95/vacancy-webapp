@@ -16,9 +16,9 @@ os.environ["PRICE_PER_CHECK_TIYIN"] = "1000000"
 os.environ["BOT_USERNAME"] = "acceptedai_bot"
 
 import server  # noqa: E402
-import db  # noqa: E402
-import cv_analysis  # noqa: E402
-import jd_fetch  # noqa: E402
+from app import db  # noqa: E402
+from app.services import cv_analysis  # noqa: E402
+from app.services import jd_fetch  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 TOKEN = "dummy:token"

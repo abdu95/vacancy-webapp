@@ -1,10 +1,10 @@
 # Frontend tests
 
-Tests `webapp/static/app.js` for real, against the actual `index.html`/`app.js`
+Tests `app/static/app.js` for real, against the actual `index.html`/`app.js`
 files (not rewritten copies) via [jsdom](https://github.com/jsdom/jsdom) +
 Node's built-in test runner (`node --test`). No browser, no Python involved -
-this is the first JS test setup in the repo (the Python `tests/` directories
-test the FastAPI/bot backends only).
+this is the JS half of the test suite; the Python files directly under
+`tests/` cover the FastAPI backend.
 
 **Why jsdom instead of testing extracted functions**: `app.js` is a single
 script with DOM calls throughout (not modularized), so most of its logic
@@ -25,14 +25,14 @@ trigger, and every assertion is on observable DOM/API-call behavior.
 ## Setup (once)
 
 ```bash
-cd webapp/tests-js
+cd tests/js
 npm install
 ```
 
 ## Run
 
 ```bash
-cd webapp/tests-js
+cd tests/js
 npm test
 ```
 

@@ -1418,7 +1418,7 @@ function renderAnalysisResult(data) {
   scrollToBottom();
 }
 
-// Must match webapp/analysis_prompts.py's ROADMAP_BLOCKS (Pre-Junior has
+// Must match app/prompts/analysis.py's ROADMAP_BLOCKS (Pre-Junior has
 // 3 items, Junior/Mid/Senior have 4) - used only to show the carousel's
 // total up front; the authoritative "is this the last one" signal is
 // still the `is_last` flag the server returns with each item.
