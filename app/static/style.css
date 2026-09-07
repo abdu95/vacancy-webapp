@@ -34,7 +34,8 @@ body {
   margin-top: 0;
   cursor: pointer;
 }
-.tab-btn .tab-icon { font-size: 20px; line-height: 1; }
+.tab-btn .tab-icon { line-height: 1; }
+.tab-btn .tab-icon svg { width: 22px; height: 22px; display: block; }
 .tab-btn.active { color: var(--tg-theme-button-color, #2481cc); font-weight: 600; }
 h2 { font-size: 18px; margin-bottom: 4px; }
 .hint { color: var(--tg-theme-hint-color, #999999); font-size: 13px; margin-bottom: 16px; }
