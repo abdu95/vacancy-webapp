@@ -315,9 +315,9 @@ const I18N = {
   welcome_continue_btn: { en: "Get started →", uz: "Boshlash →", ru: "Начать →" },
   profile_title: { en: "Profile", uz: "Profil", ru: "Профиль" },
   profile_checks_line: {
-    en: "You have {remaining} of {quota} free checks left.",
-    uz: "Sizda {quota} tadan {remaining} ta bepul tekshiruv qoldi.",
-    ru: "У вас осталось {remaining} из {quota} бесплатных проверок.",
+    en: "You have {remaining} free checks left.",
+    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
+    ru: "У вас осталось {remaining} бесплатных проверок.",
   },
   profile_buy_more_btn: { en: "💳 Buy more checks", uz: "💳 Ko'proq tekshiruv sotib olish", ru: "💳 Купить ещё проверок" },
   profile_my_cvs_btn: { en: "📄 My CVs", uz: "📄 Mening CV'larim", ru: "📄 Мои резюме" },
@@ -381,9 +381,9 @@ const I18N = {
     ru: "У вас закончились бесплатные проверки. Купите ещё, чтобы проанализировать другую вакансию:",
   },
   post_roadmap_checks_left: {
-    en: "You have {remaining}/{quota} free checks left.",
-    uz: "Sizda {remaining}/{quota} ta bepul tekshiruv qoldi.",
-    ru: "У вас осталось {remaining}/{quota} бесплатных проверок.",
+    en: "You have {remaining} free checks left.",
+    uz: "Sizda {remaining} ta bepul tekshiruv qoldi.",
+    ru: "У вас осталось {remaining} бесплатных проверок.",
   },
   analyze_another_btn: {
     en: "📊 Analyze another job", uz: "📊 Boshqa ish e'lonini tahlil qilish", ru: "📊 Проанализировать другую вакансию",
@@ -621,7 +621,7 @@ async function showChecksScreen() {
     updateChecksHeader(q.remaining, q.quota);
     contentEl.innerHTML = `
       <div class="card">
-        <div>${escapeHtml(t("profile_checks_line", { remaining: q.remaining, quota: q.quota }))}</div>
+        <div>${escapeHtml(t("profile_checks_line", { remaining: q.remaining }))}</div>
       </div>
     `;
     if (q.remaining <= 0) {
@@ -1726,7 +1726,7 @@ async function renderRoadmapDone(nextEl) {
       await renderBuyChecks(buyBox);
     } else {
       box.innerHTML = `
-        <div class="prompt-block">${escapeHtml(t("post_roadmap_checks_left", { remaining: q.remaining, quota: q.quota }))}</div>
+        <div class="prompt-block">${escapeHtml(t("post_roadmap_checks_left", { remaining: q.remaining }))}</div>
         <button onclick="goToAnalysis()">${escapeHtml(t("analyze_another_btn"))}</button>
       `;
     }
