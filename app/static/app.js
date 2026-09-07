@@ -301,6 +301,9 @@ const I18N = {
   buy_custom_invalid: {
     en: "Enter a whole number from 1 to 100.", uz: "1 dan 100 gacha butun son kiriting.", ru: "Введите целое число от 1 до 100.",
   },
+  buy_custom_total: {
+    en: "Total: {amount} UZS", uz: "Jami: {amount} so'm", ru: "Итого: {amount} сум",
+  },
   checkout_opening: { en: "Opening checkout…", uz: "To'lov ochilmoqda…", ru: "Открываю оплату…" },
   checkout_failed: {
     en: "Couldn't start checkout, try again.", uz: "To'lovni boshlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось начать оплату, попробуйте снова.",
@@ -395,7 +398,6 @@ const I18N = {
   my_cvs_upload_label: {
     en: "Upload a new CV", uz: "Yangi CV yuklang", ru: "Загрузите новое резюме",
   },
-  nav_checks_badge: { en: "🎫 {remaining}/{quota}", uz: "🎫 {remaining}/{quota}", ru: "🎫 {remaining}/{quota}" },
   post_roadmap_no_checks: {
     en: "You're out of free checks. Buy more to analyze another job:",
     uz: "Bepul tekshiruvlaringiz tugadi. Boshqa ish e'lonini tahlil qilish uchun ko'proq sotib oling:",
@@ -497,7 +499,7 @@ const state = {
 };
 const MAX_SEARCHES = 3;
 const MAX_IMPROVES = 2;
-const CHECK_QUANTITY_PRESETS = [1, 5, 10, 20, 50];
+const CHECK_QUANTITY_PRESETS = [1, 10];
 const MIN_CHECKS_PURCHASE = 1;
 const MAX_CHECKS_PURCHASE = 100;
 
@@ -573,9 +575,9 @@ function scrollToBottom() {
   });
 }
 
-function updateChecksHeader(remaining, quota) {
+function updateChecksHeader(remaining) {
   const badge = document.getElementById("nav-checks");
-  badge.textContent = t("nav_checks_badge", { remaining, quota });
+  badge.textContent = `🎫 ${checksLabel(remaining)}`;
   badge.hidden = false;
 }
 
@@ -1801,19 +1803,20 @@ function checksLabel(n) {
   return `${n} ${t(`checks_word_${pluralCategory(n)}`)}`;
 }
 
+let _buyChecksPriceTiyin = 1000000;
+
 async function renderBuyChecks(containerEl) {
   containerEl.innerHTML = `<div id="buy-checks-box"><div class="hint">…</div></div>`;
   const box = document.getElementById("buy-checks-box");
-  let price = 1000000;
   try {
     const q = await callApi("/api/quota-status", {});
-    price = q.price_per_check_tiyin;
+    _buyChecksPriceTiyin = q.price_per_check_tiyin;
   } catch (err) {
     console.error("Couldn't load price, using fallback:", err);
   }
-  const amountFor = n => Math.round(n * price / 100).toLocaleString();
+  const amountFor = n => Math.round(n * _buyChecksPriceTiyin / 100).toLocaleString();
   box.innerHTML = `
-    <div class="prompt-block">${escapeHtml(t("buy_checks_intro", { price: (price / 100).toLocaleString() }))}</div>
+    <div class="prompt-block">${escapeHtml(t("buy_checks_intro", { price: (_buyChecksPriceTiyin / 100).toLocaleString() }))}</div>
     ${CHECK_QUANTITY_PRESETS.map(n => `<button onclick="buyChecks(${n})">${escapeHtml(checksLabel(n))} — ${amountFor(n)} UZS</button>`).join("")}
     <button class="secondary" onclick="showCustomChecksInput()">${escapeHtml(t("buy_custom_btn"))}</button>
     <div id="buy-checks-extra"></div>
@@ -1824,11 +1827,41 @@ async function renderBuyChecks(containerEl) {
 function showCustomChecksInput() {
   document.getElementById("buy-checks-extra").innerHTML = `
     <div class="hint">${escapeHtml(t("buy_custom_prompt"))}</div>
-    <input type="number" id="custom_checks_input" min="${MIN_CHECKS_PURCHASE}" max="${MAX_CHECKS_PURCHASE}" />
+    <div class="qty-stepper">
+      <button type="button" class="qty-btn" onclick="adjustCustomChecks(-1)">−</button>
+      <input type="number" id="custom_checks_input" min="${MIN_CHECKS_PURCHASE}" max="${MAX_CHECKS_PURCHASE}" value="1" oninput="onCustomChecksInput()" />
+      <button type="button" class="qty-btn" onclick="adjustCustomChecks(1)">+</button>
+    </div>
+    <div class="hint" id="custom-checks-price"></div>
     <button onclick="submitCustomChecks()">${escapeHtml(t("buy_custom_confirm"))}</button>
     <div id="custom-checks-error"></div>
   `;
+  updateCustomChecksPrice();
   scrollToBottom();
+}
+
+function clampCustomChecks(val) {
+  if (!Number.isInteger(val)) val = MIN_CHECKS_PURCHASE;
+  return Math.min(MAX_CHECKS_PURCHASE, Math.max(MIN_CHECKS_PURCHASE, val));
+}
+
+function updateCustomChecksPrice() {
+  const input = document.getElementById("custom_checks_input");
+  const priceEl = document.getElementById("custom-checks-price");
+  if (!input || !priceEl) return;
+  const n = clampCustomChecks(parseInt(input.value, 10));
+  const amount = Math.round(n * _buyChecksPriceTiyin / 100).toLocaleString();
+  priceEl.textContent = t("buy_custom_total", { amount });
+}
+
+function adjustCustomChecks(delta) {
+  const input = document.getElementById("custom_checks_input");
+  input.value = clampCustomChecks(parseInt(input.value, 10) + delta);
+  updateCustomChecksPrice();
+}
+
+function onCustomChecksInput() {
+  updateCustomChecksPrice();
 }
 
 function submitCustomChecks() {

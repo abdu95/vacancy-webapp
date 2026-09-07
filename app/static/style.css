@@ -129,6 +129,22 @@ button.nav-chip {
 }
 .row { display: flex; gap: 8px; margin-top: 16px; }
 .row button { margin-top: 0; }
+.qty-stepper { display: flex; align-items: stretch; gap: 8px; margin-top: 12px; }
+.qty-stepper input {
+  flex: 1;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.qty-stepper .qty-btn {
+  width: 52px;
+  flex: none;
+  margin: 0;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
 #result { margin-top: 20px; }
 .card {
   border: 1px solid var(--tg-theme-hint-color, #dddddd);

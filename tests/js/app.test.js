@@ -35,7 +35,7 @@ test("t() interpolates {vars} into the template", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
   await flush();
   const { window } = dom;
-  assert.equal(window.t("nav_checks_badge", { remaining: 2, quota: 3 }), "🎫 2/3");
+  assert.equal(window.t("buy_custom_total", { amount: "10,000" }), "Total: 10,000 UZS");
 });
 
 test("checksLabel pluralizes in English", async () => {
@@ -474,7 +474,7 @@ test("finishing the roadmap with checks remaining offers 'analyze another job'",
 
   const area = document.getElementById("roadmap-area");
   assert.match(area.innerHTML, /Analyze another job/);
-  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2/3", "header badge should refresh after roadmap completion");
+  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2 checks", "header badge should refresh after roadmap completion");
 });
 
 test("finishing the roadmap at zero checks routes straight into buying more", async () => {
@@ -509,7 +509,7 @@ test("a successful analysis updates the header checks badge", async () => {
   const { document, window } = dom.window;
   window.goToAnalysis();
   await runAnalysis(window, document);
-  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2/3");
+  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2 checks");
 });
 
 test("hitting the free-check limit during analysis shows the buy-checks flow, not the results", async () => {
@@ -525,6 +525,51 @@ test("hitting the free-check limit during analysis shows the buy-checks flow, no
   await runAnalysis(window, document);
   assert.ok(document.getElementById("buy-checks-box"), "should route straight to buying more checks");
   assert.equal(document.getElementById("jd-input-box").hidden, true);
+});
+
+// ── Buy-checks screen: 2 presets + a custom-amount stepper ───────────────
+
+test("the buy-checks screen offers exactly 2 presets (1 and 10 checks), not a wall of options", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/quota-status": () => ({ remaining: 0, quota: 3, price_per_check_tiyin: 1000000 }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showChecksScreen();
+  const buttons = [...document.querySelectorAll("#buy-checks-box button")].map(b => b.textContent);
+  assert.equal(buttons.filter(t => /check/.test(t)).length, 2, `expected exactly 2 check-quantity presets, got: ${buttons}`);
+  assert.ok(buttons.some(t => /^1 check/.test(t)), "1-check preset missing");
+  assert.ok(buttons.some(t => /^10 checks/.test(t)), "10-check preset missing");
+});
+
+test("the custom-amount stepper defaults to 1, and +/- adjust both the count and the shown price", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/quota-status": () => ({ remaining: 0, quota: 3, price_per_check_tiyin: 1000000 }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showChecksScreen();
+  window.showCustomChecksInput();
+
+  const input = document.getElementById("custom_checks_input");
+  const priceEl = document.getElementById("custom-checks-price");
+  assert.equal(input.value, "1", "stepper should default to 1, not an empty box");
+  assert.equal(priceEl.textContent, "Total: 10,000 UZS");
+
+  window.adjustCustomChecks(1);
+  assert.equal(input.value, "2");
+  assert.equal(priceEl.textContent, "Total: 20,000 UZS", "price should recompute on every +/- click");
+
+  window.adjustCustomChecks(-1);
+  window.adjustCustomChecks(-1);
+  assert.equal(input.value, "1", "should clamp at the minimum of 1, not go to 0 or negative");
+  assert.equal(priceEl.textContent, "Total: 10,000 UZS");
 });
 
 // ── My CVs ────────────────────────────────────────────────────────────
