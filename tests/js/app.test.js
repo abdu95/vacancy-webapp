@@ -24,11 +24,47 @@ test("looksLikeUrl distinguishes a bare URL from JD text", async () => {
   assert.equal(window.looksLikeUrl("check out https://example.com for details"), false);
 });
 
+test("the daily vacancy-search cap is persisted by day, not just an in-memory counter that resets on reopen", async () => {
+  const dom = loadApp({ fetchImpl: defaultFetchMock() });
+  await flush();
+  const { window } = dom;
+
+  window.savePersistedSearchCount(3);
+  assert.equal(window.loadPersistedSearchCount(), 3, "a count saved today should be read back today");
+
+  window.localStorage.setItem("searchCountDate", "2000-01-01");
+  assert.equal(window.loadPersistedSearchCount(), 0, "a count saved on a different day must reset, not carry over indefinitely");
+});
+
 test("t() renders the language the backend reports, not just English", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "ru" }) }) });
   await flush();
   const { window } = dom;
   assert.equal(window.t("get_roadmap_btn"), "🗺 Получить план");
+});
+
+test("a failed first load shows a retry button, not a dead end", async () => {
+  let attempts = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => {
+        attempts += 1;
+        return attempts === 1 ? { status: 500, body: {} } : { has_cv: false, lang: "en" };
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+
+  const gate = document.getElementById("loading-gate");
+  assert.match(gate.innerHTML, /error/, "the first failed load should show an error");
+  const retryBtn = gate.querySelector("button");
+  assert.ok(retryBtn, "a retry button should be offered, not just a dead-end message");
+
+  retryBtn.click();
+  await flush();
+  assert.equal(attempts, 2, "clicking retry should re-issue the same request");
+  assert.equal(document.getElementById("welcome-screen").hidden, false, "a successful retry should route normally");
 });
 
 test("t() interpolates {vars} into the template", async () => {

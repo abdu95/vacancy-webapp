@@ -129,6 +129,16 @@ button.nav-chip {
 }
 .row { display: flex; gap: 8px; margin-top: 16px; }
 .row button { margin-top: 0; }
+.spinner {
+  width: 28px;
+  height: 28px;
+  margin: 40px auto;
+  border-radius: 50%;
+  border: 3px solid var(--tg-theme-hint-color, #dddddd);
+  border-top-color: var(--tg-theme-button-color, #2481cc);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .qty-stepper { display: flex; align-items: stretch; gap: 8px; margin-top: 12px; }
 .qty-stepper input {
   flex: 1;

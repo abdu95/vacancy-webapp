@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -71,11 +72,15 @@ async def health():
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# Cache-busts every /static/*.css and /static/*.js reference, not just
+# one hardcoded app.js - the app's JS moved from a single app.js to
+# several files loaded as separate <script> tags (2026-09-07), and this
+# regex needs no update the next time that list changes.
 _INDEX_HTML = (STATIC_DIR / "index.html").read_text()
-_INDEX_HTML = _INDEX_HTML.replace(
-    'href="/static/style.css"', f'href="/static/style.css?v={APP_VERSION}"'
-).replace(
-    'src="/static/app.js"', f'src="/static/app.js?v={APP_VERSION}"'
+_INDEX_HTML = re.sub(
+    r'(href|src)="(/static/[^"]+\.(?:css|js))"',
+    rf'\1="\2?v={APP_VERSION}"',
+    _INDEX_HTML,
 )
 
 

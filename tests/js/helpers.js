@@ -4,13 +4,36 @@ const { JSDOM } = require("jsdom");
 
 const STATIC_DIR = path.resolve(__dirname, "..", "..", "app", "static");
 
+// The app's JS was one 1897-line app.js until 2026-09-07, split into
+// these 8 files (loaded by index.html as plain <script src> tags, no
+// bundler - see core.js's header comment for why load order mostly
+// doesn't matter except i18n.js-before-core.js). Kept in this exact
+// order here too, so the eval'd code sees the same load order the real
+// page does.
+const APP_SCRIPTS = [
+  "i18n.js", "checks.js", "vacancy-alerts.js", "cv-upload.js",
+  "applications.js", "vacancy-search.js", "analysis.js", "core.js",
+];
+
 /**
- * Loads the REAL index.html + app.js (not a rewritten copy) into a jsdom
- * window, with Telegram.WebApp and fetch mocked. Strips <script src> /
- * <link> tags before parsing so jsdom never tries to fetch the external
- * telegram-web-app.js or our own app.js/style.css over the network -
- * app.js is injected manually via window.eval after the mocks are in
- * place, so its top-level checkCVAndRoute() call hits the mock fetch.
+ * Loads the REAL index.html + the app's JS files (not a rewritten copy)
+ * into a jsdom window, with Telegram.WebApp and fetch mocked. Strips
+ * <script src> / <link> tags before parsing so jsdom never tries to
+ * fetch the external telegram-web-app.js or our own JS/CSS over the
+ * network - the app's scripts are injected as real <script> elements
+ * (in the same order index.html loads them) after the mocks are in
+ * place, so core.js's top-level checkCVAndRoute() call hits the mock
+ * fetch.
+ *
+ * Deliberately NOT window.eval() per file: confirmed empirically that
+ * jsdom does not share top-level let/const bindings across separate
+ * eval() calls the way real <script> tags share them across a page (a
+ * const declared in one file's eval was ReferenceError-undefined from
+ * another file's eval, even though function declarations - which
+ * attach to the global object - worked fine either way). Real inserted
+ * <script> elements (this file's approach) don't have that gap, since
+ * jsdom's runScripts: "dangerously" executes them the same way a
+ * browser would.
  */
 function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" }, fetchImpl } = {}) {
   let rawHtml = fs.readFileSync(path.join(STATIC_DIR, "index.html"), "utf8");
@@ -42,8 +65,11 @@ function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" },
 
   window.fetch = fetchImpl || defaultFetchMock();
 
-  const appJs = fs.readFileSync(path.join(STATIC_DIR, "app.js"), "utf8");
-  window.eval(appJs);
+  for (const file of APP_SCRIPTS) {
+    const scriptEl = window.document.createElement("script");
+    scriptEl.textContent = fs.readFileSync(path.join(STATIC_DIR, file), "utf8");
+    window.document.body.appendChild(scriptEl);
+  }
 
   return dom;
 }
