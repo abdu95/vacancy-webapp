@@ -78,9 +78,9 @@ const I18N = {
   match_suffix: { en: "% match", uz: "% moslik", ru: "% совпадение" },
   view_posting: { en: "View posting →", uz: "E'lonni ko'rish →", ru: "Посмотреть вакансию →" },
   search_limit_session: {
-    en: "You've used all 3 free vacancy searches for today - come back tomorrow for more.",
-    uz: "Bugungi kun uchun barcha 3 ta bepul vakansiya qidiruvidan foydalandingiz - ertaga yana urinib ko'ring.",
-    ru: "Вы использовали все 3 бесплатных поиска вакансий на сегодня - возвращайтесь завтра.",
+    en: "You've used your 3 free searches for this job title.",
+    uz: "Ushbu lavozim uchun 3 ta bepul qidiruvingizdan foydalandingiz.",
+    ru: "Вы использовали 3 бесплатных поиска для этой должности.",
   },
   searching_message: {
     en: "🔎 Searching for {title} in {location}… usually takes 15–30 seconds.",
@@ -106,14 +106,20 @@ const I18N = {
   yes_like_it: { en: "👍 Yes, I like it", uz: "👍 Ha, yoqdi", ru: "👍 Да, нравится" },
   search_again_btn: { en: "🔄 Search again", uz: "🔄 Qayta qidirish", ru: "🔄 Искать снова" },
   search_limit_title: {
-    en: "You've used all 3 free vacancy searches for today - come back tomorrow for more.",
-    uz: "Bugungi kun uchun barcha 3 ta bepul vakansiya qidiruvidan foydalandingiz - ertaga yana urinib ko'ring.",
-    ru: "Вы использовали все 3 бесплатных поиска вакансий на сегодня - возвращайтесь завтра.",
+    en: "You've used your 3 free searches for this job title.",
+    uz: "Ushbu lavozim uchun 3 ta bepul qidiruvingizdan foydalandingiz.",
+    ru: "Вы использовали 3 бесплатных поиска для этой должности.",
   },
   search_cap_prompt: {
-    en: "Want a deeper look? Analyze your CV against a specific job — get an ATS score, bullet-point fixes, and a step-by-step roadmap.",
-    uz: "Chuqurroq tahlil kerakmi? CV'ingizni aniq bir ish e'loniga solishtiring — ATS bali, tuzatishlar va bosqichma-bosqich reja oling.",
-    ru: "Хотите более глубокий анализ? Сравните резюме с конкретной вакансией — получите ATS-балл, исправления и пошаговый план.",
+    en: "Try a different job title for fresh results, get daily alerts instead of searching manually, or go deeper with a full CV-vs-job analysis.",
+    uz: "Yangi natijalar uchun boshqa lavozim nomini sinab ko'ring, qo'lda qidirish o'rniga kunlik bildirishnomalarni yoqing, yoki CV'ingizni to'liq tahlil qiling.",
+    ru: "Попробуйте другую должность для новых результатов, включите ежедневные уведомления вместо ручного поиска, либо сделайте полный анализ резюме и вакансии.",
+  },
+  search_cap_new_title_btn: {
+    en: "🔎 Try a different title", uz: "🔎 Boshqa lavozimni sinash", ru: "🔎 Попробовать другую должность",
+  },
+  search_cap_alerts_btn: {
+    en: "🔔 Get daily alerts instead", uz: "🔔 Kunlik bildirishnomalarni yoqish", ru: "🔔 Включить ежедневные уведомления",
   },
   search_cap_analyze_btn: {
     en: "📊 Analyze my CV against a job", uz: "📊 CV'imni ish e'loniga solishtirish", ru: "📊 Сравнить резюме с вакансией",
@@ -309,6 +315,27 @@ const I18N = {
   checkout_failed: {
     en: "Couldn't start checkout, try again.", uz: "To'lovni boshlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось начать оплату, попробуйте снова.",
   },
+  checkout_reassurance: {
+    en: "You'll finish payment on Payme's secure page, then come right back here.",
+    uz: "To'lovni Payme'ning xavfsiz sahifasida yakunlaysiz, so'ng shu yerga qaytasiz.",
+    ru: "Вы завершите оплату на защищённой странице Payme, а затем вернётесь сюда.",
+  },
+  checkout_check_status_btn: {
+    en: "I've paid — check status", uz: "To'ladim — holatni tekshirish", ru: "Я оплатил — проверить статус",
+  },
+  checkout_confirmed: {
+    en: "✅ Payment received! You now have {remaining} checks.",
+    uz: "✅ To'lov qabul qilindi! Endi sizda {remaining} ta tekshiruv bor.",
+    ru: "✅ Оплата получена! Теперь у вас {remaining} проверок.",
+  },
+  checkout_still_pending: {
+    en: "Not confirmed yet - if you just paid, give it a moment and check again.",
+    uz: "Hali tasdiqlanmadi - agar hozir to'lagan bo'lsangiz, biroz kuting va qayta tekshiring.",
+    ru: "Пока не подтверждено - если вы только что оплатили, подождите немного и проверьте снова.",
+  },
+  checkout_status_check_failed: {
+    en: "Couldn't check payment status, try again.", uz: "To'lov holatini tekshirib bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось проверить статус оплаты, попробуйте снова.",
+  },
   checks_word_one: { en: "check", uz: "ta tekshiruv", ru: "проверка" },
   checks_word_few: { en: "checks", uz: "ta tekshiruv", ru: "проверки" },
   checks_word_many: { en: "checks", uz: "ta tekshiruv", ru: "проверок" },
@@ -331,6 +358,11 @@ const I18N = {
     en: "👋 Welcome to AcceptedAI. I help you get accepted into your dream job — analyze your CV against a job description, or find and track vacancies.",
     uz: "👋 AcceptedAI'ga xush kelibsiz. Men sizga orzuingizdagi ishga qabul qilinishda yordam beraman — CV'ingizni ish e'loniga solishtiring yoki vakansiyalarni toping va kuzating.",
     ru: "👋 Добро пожаловать в AcceptedAI. Я помогу вам получить работу мечты — сравните резюме с вакансией или найдите и отслеживайте вакансии.",
+  },
+  welcome_free_checks_line: {
+    en: "You get {quota} free CV-vs-job analyses to try it out.",
+    uz: "Sinab ko'rish uchun {quota} ta bepul CV-ish e'loni tahlili beriladi.",
+    ru: "Вам доступно {quota} бесплатных анализа резюме против вакансии, чтобы попробовать.",
   },
   welcome_continue_btn: { en: "Get started →", uz: "Boshlash →", ru: "Начать →" },
   profile_title: { en: "Profile", uz: "Profil", ru: "Профиль" },

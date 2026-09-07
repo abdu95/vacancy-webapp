@@ -24,18 +24,6 @@ test("looksLikeUrl distinguishes a bare URL from JD text", async () => {
   assert.equal(window.looksLikeUrl("check out https://example.com for details"), false);
 });
 
-test("the daily vacancy-search cap is persisted by day, not just an in-memory counter that resets on reopen", async () => {
-  const dom = loadApp({ fetchImpl: defaultFetchMock() });
-  await flush();
-  const { window } = dom;
-
-  window.savePersistedSearchCount(3);
-  assert.equal(window.loadPersistedSearchCount(), 3, "a count saved today should be read back today");
-
-  window.localStorage.setItem("searchCountDate", "2000-01-01");
-  assert.equal(window.loadPersistedSearchCount(), 0, "a count saved on a different day must reset, not carry over indefinitely");
-});
-
 test("t() renders the language the backend reports, not just English", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "ru" }) }) });
   await flush();
@@ -138,6 +126,22 @@ test("welcome-screen's continue button reveals the home-screen options", async (
   assert.equal(document.getElementById("home-screen").hidden, false);
 });
 
+test("the welcome screen states the free-check count up front, not just hidden behind the header badge", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: false, lang: "en" }),
+      "/api/quota-status": () => ({ remaining: 2, quota: 2, price_per_check_tiyin: 1000000 }),
+    }),
+  });
+  await flush(6);
+  const { document } = dom.window;
+  assert.match(
+    document.getElementById("welcome-body").textContent,
+    /2 free CV-vs-job analyses/,
+    "a brand-new user should see the free-check count on the very first screen, not discover it later",
+  );
+});
+
 // ── Inline CV-upload gating (asked only when the chosen path needs it) ──
 
 test("goToAnalysis routes to cv-gate (not straight to the JD box) when no CV is on file", async () => {
@@ -149,13 +153,48 @@ test("goToAnalysis routes to cv-gate (not straight to the JD box) when no CV is 
   assert.equal(document.getElementById("analysis-screen").hidden, true);
 });
 
-test("goToVacancySearch routes to cv-gate when no CV is on file", async () => {
+test("goToVacancySearch goes straight to title-screen even with no CV on file - typing your own title needs no CV", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: false, lang: "en" }) }) });
   await flush();
   const { document, window } = dom.window;
   window.goToVacancySearch();
-  assert.equal(document.getElementById("cv-gate").hidden, false);
-  assert.equal(document.getElementById("title-screen").hidden, true);
+  assert.equal(document.getElementById("title-screen").hidden, false, "search must not be gated behind a CV upload");
+  assert.equal(document.getElementById("cv-gate").hidden, true);
+});
+
+test("suggesting titles from the CV routes to cv-gate when no CV is on file yet", async () => {
+  const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: false, lang: "en" }) }) });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.suggestTitles();
+  assert.equal(document.getElementById("cv-gate").hidden, false, "suggest-from-CV is the one step in this flow that actually needs a CV");
+});
+
+test("checking a vacancy's fit routes to cv-gate when no CV is on file, and resumes checkFit after upload", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: false, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/upload-cv": () => ({ saved: true }),
+      "/api/score-vacancy": () => ({ score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+  window.likeVacancy();
+  window.checkFit();
+  assert.equal(document.getElementById("cv-gate").hidden, false, "check-fit needs a CV even though search itself didn't");
+
+  const file = new window.File(["cv text"], "resume.pdf", { type: "application/pdf" });
+  Object.defineProperty(document.getElementById("cv_file"), "files", { value: [file] });
+  await window.uploadCV();
+  await flush();
+  assert.equal(document.getElementById("search-screen").hidden, false, "should resume on the same vacancy, not bounce to home");
+  assert.match(document.getElementById("action-area").innerHTML, /Good fit\./, "checkFit should have re-run automatically after upload");
 });
 
 test("goToAnalysis skips cv-gate and opens the JD box directly once a CV is on file", async () => {
@@ -185,7 +224,7 @@ test("uploading a CV after goToAnalysis lands on the analysis screen (not home)"
   assert.equal(document.getElementById("home-screen").hidden, true);
 });
 
-test("uploading a CV after goToVacancySearch lands on the title screen (not home)", async () => {
+test("uploading a CV after being gated by suggest-from-CV lands back on the title screen (not home)", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({
       "/api/cv-status": () => ({ has_cv: false, lang: "en" }),
@@ -195,6 +234,7 @@ test("uploading a CV after goToVacancySearch lands on the title screen (not home
   await flush();
   const { document, window } = dom.window;
   window.goToVacancySearch();
+  window.suggestTitles(); // the one action in this screen that needs a CV
   const file = new window.File(["cv text"], "resume.pdf", { type: "application/pdf" });
   Object.defineProperty(document.getElementById("cv_file"), "files", { value: [file] });
   await window.uploadCV();
@@ -203,9 +243,9 @@ test("uploading a CV after goToVacancySearch lands on the title screen (not home
   assert.equal(document.getElementById("home-screen").hidden, true);
 });
 
-// ── Session-wide vacancy-search cap (closes the per-title reset loophole) ─
+// ── Per-title vacancy-search cap (the escape valve is a new title, not a wait) ─
 
-test("the 3-search cap is session-wide: changing job titles does not reset it", async () => {
+test("the 3-search cap is per job title: picking a different title gives a fresh 3, not a wall you have to wait out", async () => {
   let searchCalls = 0;
   const dom = loadApp({
     fetchImpl: defaultFetchMock({
@@ -226,11 +266,16 @@ test("the 3-search cap is session-wide: changing job titles does not reset it", 
   await window.search();
   assert.equal(searchCalls, 3, "3 searches should have hit the API");
 
-  // Previously, picking a NEW title reset the counter to 0, letting users
-  // search forever by cycling titles. It must not anymore.
+  const resultHtml = document.getElementById("result").innerHTML;
+  assert.match(resultHtml, /backToTitleScreen\(\)/, "hitting the cap should offer trying a different title");
+  assert.match(resultHtml, /showVacancyAlerts\(\)/, "hitting the cap should also nudge toward daily alerts");
+
+  // A different title is the deliberate escape valve, not a bypassable
+  // loophole - "come back tomorrow" was replaced with this on purpose.
   window.pickTitle("Backend Engineer");
+  document.getElementById("location").value = "Remote";
   await window.search();
-  assert.equal(searchCalls, 3, "a 4th search, even under a brand-new title, must not hit the API");
+  assert.equal(searchCalls, 4, "a new title should get a fresh 3 searches");
 });
 
 test("liking a vacancy hides the like/search-again/carousel/analyze-CV decision block, leaving only the current step's buttons", async () => {
@@ -606,6 +651,60 @@ test("the custom-amount stepper defaults to 1, and +/- adjust both the count and
   window.adjustCustomChecks(-1);
   assert.equal(input.value, "1", "should clamp at the minimum of 1, not go to 0 or negative");
   assert.equal(priceEl.textContent, "Total: 10,000 UZS");
+});
+
+test("buying checks shows a reassurance message and a real way to check payment status, not a dead end after openLink", async () => {
+  let quotaCalls = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/quota-status": () => {
+        quotaCalls += 1;
+        // Calls 1-3: showChecksScreen's own fetch, renderBuyChecks's price
+        // fetch, buyChecks's "before" snapshot - all still unpaid (0).
+        // Call 4+: checkPaymentStatus, simulating the payment having landed.
+        return { remaining: quotaCalls >= 4 ? 3 : 0, quota: 3, price_per_check_tiyin: 1000000 };
+      },
+      "/api/checkout": () => ({ checkout_url: "https://checkout.paycom.uz/xyz", amount: 1000000, checks: 1 }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showChecksScreen();
+
+  await window.buyChecks(1);
+  assert.equal(window.__lastOpenedLink, "https://checkout.paycom.uz/xyz", "must still hand off to the real checkout URL");
+  const box = document.getElementById("buy-checks-box");
+  assert.match(box.innerHTML, /Payme/, "should reassure the user before/after the external handoff, not just silently open a link");
+  assert.ok(box.querySelector("button"), "should offer a way to check payment status, not strand the user");
+
+  await window.checkPaymentStatus(0);
+  assert.match(
+    document.getElementById("checkout-status-result").innerHTML,
+    /Payment received/,
+    "once the remaining count actually goes up, it should say so - not leave the user guessing",
+  );
+});
+
+test("checking payment status before it's actually landed says so plainly, not a false positive", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/quota-status": () => ({ remaining: 0, quota: 3, price_per_check_tiyin: 1000000 }),
+      "/api/checkout": () => ({ checkout_url: "https://checkout.paycom.uz/xyz", amount: 1000000, checks: 1 }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showChecksScreen();
+  await window.buyChecks(1);
+
+  await window.checkPaymentStatus(0);
+  assert.match(
+    document.getElementById("checkout-status-result").innerHTML,
+    /Not confirmed yet/,
+    "must not falsely claim success when the remaining count hasn't actually moved",
+  );
 });
 
 // ── My CVs ────────────────────────────────────────────────────────────

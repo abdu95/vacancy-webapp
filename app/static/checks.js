@@ -173,6 +173,23 @@ function checksLabel(n) {
 
 let _buyChecksPriceTiyin = 1000000;
 
+// Checkout hands off to an external Payme page (tg.openLink), leaving
+// the Mini App entirely - the single step most likely to lose someone,
+// since there's no telling whether it worked once they're back. Two
+// mitigations: a reassurance line before the handoff, and a "check
+// payment status" affordance instead of a dead end. _pendingCheckoutRemaining
+// (null when no checkout is in flight) is the "remaining" count from just
+// before checkout started - if the real count comes back higher, payment
+// went through. Also wired to visibilitychange so returning from Payme's
+// page auto-checks, best-effort - the explicit button is the guaranteed path.
+let _pendingCheckoutRemaining = null;
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || _pendingCheckoutRemaining === null) return;
+  const resultEl = document.getElementById("checkout-status-result");
+  if (resultEl) checkPaymentStatus(_pendingCheckoutRemaining);
+});
+
 async function renderBuyChecks(containerEl) {
   containerEl.innerHTML = `<div id="buy-checks-box"><div class="hint">…</div></div>`;
   const box = document.getElementById("buy-checks-box");
@@ -246,14 +263,41 @@ async function buyChecks(checks) {
   const box = document.getElementById("buy-checks-box");
   box.innerHTML = `<div class="hint">${escapeHtml(t("checkout_opening"))}</div>`;
   try {
+    const beforeQ = await callApi("/api/quota-status", {});
     const data = await callApi("/api/checkout", { checks });
+    _pendingCheckoutRemaining = beforeQ.remaining;
     if (tg && tg.openLink) {
       tg.openLink(data.checkout_url);
     } else {
       window.open(data.checkout_url, "_blank");
     }
+    box.innerHTML = `
+      <div class="prompt-block">${escapeHtml(t("checkout_reassurance"))}</div>
+      <button onclick="checkPaymentStatus(${beforeQ.remaining})">${escapeHtml(t("checkout_check_status_btn"))}</button>
+      <div id="checkout-status-result"></div>
+    `;
+    scrollToBottom();
   } catch (err) {
     console.error("Checkout failed:", err);
     box.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("checkout_failed")))}</div>`;
+  }
+}
+
+async function checkPaymentStatus(remainingBefore) {
+  const resultEl = document.getElementById("checkout-status-result");
+  if (!resultEl) return;
+  resultEl.innerHTML = `<div class="hint">…</div>`;
+  try {
+    const q = await callApi("/api/quota-status", {});
+    updateChecksHeader(q.remaining);
+    if (q.remaining > remainingBefore) {
+      _pendingCheckoutRemaining = null;
+      resultEl.innerHTML = `<div class="prompt-block">${escapeHtml(t("checkout_confirmed", { remaining: q.remaining }))}</div>`;
+    } else {
+      resultEl.innerHTML = `<div class="hint">${escapeHtml(t("checkout_still_pending"))}</div>`;
+    }
+  } catch (err) {
+    console.error("Checking payment status failed:", err);
+    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("checkout_status_check_failed")))}</div>`;
   }
 }

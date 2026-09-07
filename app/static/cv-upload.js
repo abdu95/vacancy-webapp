@@ -38,6 +38,15 @@ async function uploadCV() {
     } else if (state.postUploadDestination === "vacancy") {
       state.postUploadDestination = null;
       showScreen("title-screen");
+    } else if (state.postUploadDestination === "checkFit") {
+      // Resume exactly where the user left off - back to the same
+      // vacancy they were already looking at, straight into checking
+      // fit, instead of dropping them back at a blank search screen.
+      state.postUploadDestination = null;
+      showScreen("search-screen");
+      renderVacancyCard();
+      likeVacancy();
+      checkFit();
     } else {
       showScreen("home-screen");
     }

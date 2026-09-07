@@ -20,34 +20,8 @@ if (tg) {
   tg.expand();
 }
 
-// The 3-searches-per-day cap is enforced only client-side (no server quota
-// like analysis has, since search isn't the metered paid feature) - persist
-// it in localStorage keyed by day so it survives closing and reopening the
-// Mini App, rather than being a "cap" that resets for free on every reopen.
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadPersistedSearchCount() {
-  try {
-    if (localStorage.getItem("searchCountDate") !== todayKey()) return 0;
-    return parseInt(localStorage.getItem("searchCount"), 10) || 0;
-  } catch {
-    return 0; // localStorage unavailable (private mode etc.) - cap just won't persist
-  }
-}
-
-function savePersistedSearchCount(n) {
-  try {
-    localStorage.setItem("searchCountDate", todayKey());
-    localStorage.setItem("searchCount", String(n));
-  } catch {
-    // ignore - not fatal, the cap just won't persist this session
-  }
-}
-
 const state = {
-  jobTitle: "", seenCompanies: [], searchCount: loadPersistedSearchCount(),
+  jobTitle: "", seenCompanies: [], searchCount: 0,
   vacancies: [], vacancyIndex: -1, improveCount: 0,
   jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
@@ -105,12 +79,14 @@ function activateTab(tab) {
 
 function goHome() { showScreen("home-screen"); }
 
+// Deliberately does NOT gate on hasCv: the point of leading with vacancy
+// search is to let a brand-new user see real value (actual matching
+// postings) before asking for anything as sensitive as a CV upload.
+// Typing your own job title needs no CV at all; "check fit" and
+// "suggest titles from my CV" are the only two steps in this flow that
+// actually need one, and each gates for it individually, right when
+// it's needed - not before search even starts.
 function goToVacancySearch() {
-  if (!state.hasCv) {
-    state.postUploadDestination = "vacancy";
-    showScreen("cv-gate");
-    return;
-  }
   showScreen("title-screen");
 }
 
@@ -141,8 +117,10 @@ async function refreshChecksHeader() {
   try {
     const q = await callApi("/api/quota-status", {});
     updateChecksHeader(q.remaining, q.quota);
+    return q;
   } catch (err) {
     console.error("Couldn't load quota status for header:", err);
+    return null;
   }
 }
 
@@ -170,7 +148,14 @@ async function checkCVAndRoute() {
     }
 
     showScreen(data.has_cv ? "home-screen" : "welcome-screen");
-    refreshChecksHeader();
+    const q = await refreshChecksHeader();
+    // State the free-check count up front, right on the first screen a
+    // new user sees - previously invisible until they opened the checks
+    // badge or hit the wall mid-analysis.
+    if (!data.has_cv && q) {
+      const bodyEl = document.getElementById("welcome-body");
+      bodyEl.textContent = `${bodyEl.textContent} ${t("welcome_free_checks_line", { quota: q.quota })}`;
+    }
   } catch (err) {
     console.error("CV status check failed:", err);
     document.getElementById("loading-gate").innerHTML = `

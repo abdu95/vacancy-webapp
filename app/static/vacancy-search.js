@@ -9,6 +9,11 @@ function showManualTitle() {
 }
 
 async function suggestTitles() {
+  if (!state.hasCv) {
+    state.postUploadDestination = "vacancy";
+    showScreen("cv-gate");
+    return;
+  }
   document.getElementById("manual-title-box").hidden = true;
   const box = document.getElementById("suggested-titles-box");
   const chipsEl = document.getElementById("title-chips");
@@ -44,6 +49,10 @@ function pickTitle(title) {
   state.vacancies = [];
   state.vacancyIndex = -1;
   state.improveCount = 0;
+  // The free-search cap is per title, not a hard daily wall: picking a
+  // (new or different) title always starts with a fresh MAX_SEARCHES -
+  // trying another title is the escape valve, not "come back tomorrow".
+  state.searchCount = 0;
   document.getElementById("chosen-title-label").textContent = title;
   document.getElementById("result").innerHTML = "";
   showScreen("search-screen");
@@ -77,7 +86,6 @@ async function search() {
       seen_companies: state.seenCompanies,
     });
     state.searchCount += 1;
-    savePersistedSearchCount(state.searchCount);
     const newVacancies = data.vacancies || [];
 
     if (newVacancies.length === 0 && state.vacancies.length === 0) {
@@ -156,7 +164,9 @@ function renderVacancyCard() {
 function searchCapCta() {
   return `
     <div class="prompt-block">${escapeHtml(t("search_cap_prompt"))}</div>
-    <button onclick="goToAnalysis()">${escapeHtml(t("search_cap_analyze_btn"))}</button>
+    <button onclick="backToTitleScreen()">${escapeHtml(t("search_cap_new_title_btn"))}</button>
+    <button class="secondary" onclick="showVacancyAlerts()">${escapeHtml(t("search_cap_alerts_btn"))}</button>
+    <button class="secondary" onclick="goToAnalysis()">${escapeHtml(t("search_cap_analyze_btn"))}</button>
   `;
 }
 
@@ -193,6 +203,14 @@ async function applyDirectly() {
 }
 
 async function checkFit() {
+  // The one step in "find a vacancy first" that actually needs a CV -
+  // gate right here, not before search, so the ask only shows up once
+  // the user has already found something worth comparing against.
+  if (!state.hasCv) {
+    state.postUploadDestination = "checkFit";
+    showScreen("cv-gate");
+    return;
+  }
   actionArea().innerHTML = `<div class="hint">${escapeHtml(t("checking_fit"))}</div>`;
   try {
     const score = await callApi("/api/score-vacancy", { vacancy: currentVacancy() });
