@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import hashlib
 import hmac
@@ -5,6 +6,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import parse_qsl
 
@@ -17,7 +19,7 @@ from pydantic import BaseModel
 load_dotenv()
 
 from app import db
-from app.services import cv_analysis, cv_fixes, cv_parser, hypothesis, jd_fetch, scoring, vacancy_source  # vacancy_source - see its docstring
+from app.services import cv_analysis, cv_fixes, cv_parser, hypothesis, jd_fetch, scoring, vacancy_alerts, vacancy_source  # vacancy_source - see its docstring
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -41,6 +43,32 @@ MIN_CHECKS_PURCHASE = 1
 MAX_CHECKS_PURCHASE = 100
 
 app = FastAPI()
+
+# Daily vacancy-alerts scheduler. In-process asyncio loop rather than a new
+# dependency (APScheduler etc.) - this is one job, once a day, and the
+# process already runs an event loop. A redeploy resets the sleep-until
+# timer, which just means it recomputes "next 4am UTC" on restart - not
+# mission-critical timing, no need for persistence across restarts.
+ALERT_HOUR_UTC = 4  # ~09:00 in Tashkent (UTC+5), the primary user base
+
+
+async def _vacancy_alerts_loop() -> None:
+    while True:
+        now = datetime.now(timezone.utc)
+        target = now.replace(hour=ALERT_HOUR_UTC, minute=0, second=0, microsecond=0)
+        if target <= now:
+            target += timedelta(days=1)
+        await asyncio.sleep((target - now).total_seconds())
+        try:
+            summary = await vacancy_alerts.run_vacancy_alerts()
+            logger.info("Daily vacancy alerts run: %s", summary)
+        except Exception:
+            logger.exception("Daily vacancy alerts run failed")
+
+
+@app.on_event("startup")
+async def _start_background_jobs() -> None:
+    asyncio.create_task(_vacancy_alerts_loop())
 
 
 def verify_init_data(init_data: str) -> dict:
@@ -353,6 +381,33 @@ async def delete_check(req: GetCheckRequest):
     if not found:
         raise HTTPException(404, "Check not found")
     return {"deleted": True}
+
+
+class SavedSearchRequest(BaseModel):
+    init_data: str
+
+
+@app.post("/api/saved-search")
+async def get_saved_search(req: SavedSearchRequest):
+    user = authenticate(req.init_data)
+    return db.get_saved_search(user["id"])
+
+
+class SaveSavedSearchRequest(BaseModel):
+    init_data: str
+    job_title: str
+    location: str = ""
+    alerts_enabled: bool = False
+
+
+@app.post("/api/saved-search/save")
+async def save_saved_search(req: SaveSavedSearchRequest):
+    user = authenticate(req.init_data)
+    job_title = req.job_title.strip()
+    if req.alerts_enabled and not job_title:
+        raise HTTPException(400, "Set a job title before turning on alerts")
+    db.save_search_criteria(user["id"], job_title, req.location.strip(), req.alerts_enabled)
+    return {"saved": True}
 
 
 class AnalyzeRequest(BaseModel):

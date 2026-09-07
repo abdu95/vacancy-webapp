@@ -323,6 +323,28 @@ const I18N = {
   profile_my_cvs_btn: { en: "📄 My CVs", uz: "📄 Mening CV'larim", ru: "📄 Мои резюме" },
   profile_applications_btn: { en: "📋 My Applications", uz: "📋 Arizalarim", ru: "📋 Мои заявки" },
   profile_my_checks_btn: { en: "📊 My Checks", uz: "📊 Mening tekshiruvlarim", ru: "📊 Мои проверки" },
+  profile_vacancy_alerts_btn: { en: "🔔 Vacancy Alerts", uz: "🔔 Vakansiya bildirishnomalari", ru: "🔔 Уведомления о вакансиях" },
+  vacancy_alerts_explainer: {
+    en: "Set a job title (and optional location) and we'll message you here once a day if a genuinely new matching vacancy shows up - no repeats.",
+    uz: "Lavozim nomini (va xohlasangiz joylashuvni) kiriting - agar chinakam yangi mos vakansiya paydo bo'lsa, kuniga bir marta shu yerda xabar beramiz - takrorlanmaydi.",
+    ru: "Укажите должность (и, при желании, локацию) - если появится действительно новая подходящая вакансия, мы напишем вам сюда раз в день, без повторов.",
+  },
+  vacancy_alerts_title_label: { en: "Job title", uz: "Lavozim nomi", ru: "Должность" },
+  vacancy_alerts_title_placeholder: { en: "e.g. Data Analyst", uz: "masalan, Data Analyst", ru: "например, Data Analyst" },
+  vacancy_alerts_location_label: { en: "Location (optional)", uz: "Joylashuv (ixtiyoriy)", ru: "Локация (необязательно)" },
+  vacancy_alerts_location_placeholder: { en: "e.g. Tashkent, or leave blank for Any", uz: "masalan, Toshkent, yoki bo'sh qoldiring", ru: "например, Ташкент, или оставьте пустым" },
+  vacancy_alerts_toggle_label: { en: "🔔 Notify me about new matches", uz: "🔔 Yangi mos vakansiyalar haqida xabar bering", ru: "🔔 Уведомлять о новых подходящих вакансиях" },
+  vacancy_alerts_save_btn: { en: "Save", uz: "Saqlash", ru: "Сохранить" },
+  vacancy_alerts_load_failed: {
+    en: "Couldn't load your alert settings.", uz: "Bildirishnoma sozlamalarini yuklab bo'lmadi.", ru: "Не удалось загрузить настройки уведомлений.",
+  },
+  vacancy_alerts_save_failed: {
+    en: "Couldn't save, try again.", uz: "Saqlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось сохранить, попробуйте снова.",
+  },
+  vacancy_alerts_needs_title: {
+    en: "Set a job title before turning on alerts.", uz: "Bildirishnomalarni yoqishdan oldin lavozim nomini kiriting.", ru: "Прежде чем включить уведомления, укажите должность.",
+  },
+  vacancy_alerts_saved: { en: "Saved.", uz: "Saqlandi.", ru: "Сохранено." },
   tab_home_label: { en: "Home", uz: "Bosh sahifa", ru: "Главная" },
   tab_search_label: { en: "Search", uz: "Qidirish", ru: "Поиск" },
   tab_analyze_label: { en: "Analyze", uz: "Tahlil", ru: "Анализ" },
@@ -425,6 +447,16 @@ function applyStaticTranslations() {
   document.getElementById("profile-my-applications-label").textContent = t("profile_applications_btn");
   document.getElementById("my-checks-title").textContent = t("profile_my_checks_btn");
   document.getElementById("btn-my-checks-back").textContent = t("back_link");
+  document.getElementById("profile-vacancy-alerts-label").textContent = t("profile_vacancy_alerts_btn");
+  document.getElementById("vacancy-alerts-title").textContent = t("profile_vacancy_alerts_btn");
+  document.getElementById("btn-vacancy-alerts-back").textContent = t("back_link");
+  document.getElementById("vacancy-alerts-explainer").textContent = t("vacancy_alerts_explainer");
+  document.getElementById("vacancy-alerts-title-label").textContent = t("vacancy_alerts_title_label");
+  document.getElementById("alerts_job_title").placeholder = t("vacancy_alerts_title_placeholder");
+  document.getElementById("vacancy-alerts-location-label").textContent = t("vacancy_alerts_location_label");
+  document.getElementById("alerts_location").placeholder = t("vacancy_alerts_location_placeholder");
+  document.getElementById("vacancy-alerts-toggle-label").textContent = t("vacancy_alerts_toggle_label");
+  document.getElementById("save_vacancy_alerts_btn").textContent = t("vacancy_alerts_save_btn");
 
   const filterEl = document.getElementById("applications-filter");
   filterEl.innerHTML = ['all', 'applied', 'phone_screen', 'tech_interview', 'offer', 'rejected', 'ghosted']
@@ -455,7 +487,7 @@ const MAX_CHECKS_PURCHASE = 100;
 
 const ALL_SCREENS = [
   "loading-gate", "welcome-screen", "cv-gate", "home-screen", "checks-screen",
-  "profile-screen", "my-cvs-screen", "my-checks-screen", "analysis-screen",
+  "profile-screen", "my-cvs-screen", "my-checks-screen", "vacancy-alerts-screen", "analysis-screen",
   "title-screen", "search-screen", "applications-screen",
 ];
 
@@ -470,6 +502,7 @@ const SCREEN_TO_TAB = {
   "analysis-screen": "analyze",
   "profile-screen": "profile", "my-cvs-screen": "profile",
   "my-checks-screen": "profile", "applications-screen": "profile",
+  "vacancy-alerts-screen": "profile",
 };
 
 const HIDE_TAB_BAR_ON = new Set(["loading-gate", "welcome-screen"]);
@@ -721,6 +754,56 @@ async function deleteCheckNow(analysisId) {
   } catch (err) {
     console.error("Delete check failed:", err);
     el.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("delete_failed")))}</div>`;
+  }
+}
+
+// ── Vacancy Alerts (Profile > Vacancy Alerts) ────────────────────────
+async function showVacancyAlerts() {
+  showScreen("vacancy-alerts-screen");
+  document.getElementById("vacancy-alerts-result").innerHTML = "";
+  const titleInput = document.getElementById("alerts_job_title");
+  const locationInput = document.getElementById("alerts_location");
+  const toggle = document.getElementById("alerts_enabled_toggle");
+  titleInput.value = "";
+  locationInput.value = "";
+  toggle.checked = false;
+  try {
+    const saved = await callApi("/api/saved-search", {});
+    // Pre-fill from a saved value, or fall back to whatever the user
+    // last typed into the live vacancy search this session - a small
+    // convenience so a returning user isn't stuck typing from scratch.
+    titleInput.value = saved.job_title || state.jobTitle || "";
+    locationInput.value = saved.location || "";
+    toggle.checked = !!saved.alerts_enabled;
+  } catch (err) {
+    console.error("Loading saved search failed:", err);
+    document.getElementById("vacancy-alerts-result").innerHTML =
+      `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("vacancy_alerts_load_failed")))}</div>`;
+  }
+}
+
+async function saveVacancyAlerts() {
+  const jobTitle = document.getElementById("alerts_job_title").value.trim();
+  const location = document.getElementById("alerts_location").value.trim();
+  const alertsEnabled = document.getElementById("alerts_enabled_toggle").checked;
+  const resultEl = document.getElementById("vacancy-alerts-result");
+  const btn = document.getElementById("save_vacancy_alerts_btn");
+
+  if (alertsEnabled && !jobTitle) {
+    resultEl.innerHTML = `<div class="error">${escapeHtml(t("vacancy_alerts_needs_title"))}</div>`;
+    return;
+  }
+
+  btn.disabled = true;
+  resultEl.innerHTML = `<div class="hint">${escapeHtml(t("saving"))}</div>`;
+  try {
+    await callApi("/api/saved-search/save", { job_title: jobTitle, location, alerts_enabled: alertsEnabled });
+    resultEl.innerHTML = `<div class="hint">${escapeHtml(t("vacancy_alerts_saved"))}</div>`;
+  } catch (err) {
+    console.error("Saving alert settings failed:", err);
+    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("vacancy_alerts_save_failed")))}</div>`;
+  } finally {
+    btn.disabled = false;
   }
 }
 

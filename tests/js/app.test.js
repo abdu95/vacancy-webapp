@@ -751,3 +751,91 @@ test("deleting a check requires confirmation before calling the delete endpoint"
   await window.deleteCheckNow(1);
   assert.equal(deleteCalled, true);
 });
+
+// ── Vacancy Alerts (Profile > Vacancy Alerts) ────────────────────────
+
+test("Vacancy Alerts screen pre-fills from saved criteria", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: "Data Analyst", location: "Tashkent", alerts_enabled: true }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showVacancyAlerts();
+  assert.equal(document.getElementById("alerts_job_title").value, "Data Analyst");
+  assert.equal(document.getElementById("alerts_location").value, "Tashkent");
+  assert.equal(document.getElementById("alerts_enabled_toggle").checked, true);
+});
+
+test("Vacancy Alerts screen falls back to the last live search's title when nothing is saved yet", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.pickTitle("Data Analyst"); // the real action that sets state.jobTitle during a live search
+  await window.showVacancyAlerts();
+  assert.equal(document.getElementById("alerts_job_title").value, "Data Analyst");
+  assert.equal(document.getElementById("alerts_enabled_toggle").checked, false, "no saved criteria means alerts must not silently turn on");
+});
+
+test("saving alerts with the toggle on but no job title is rejected client-side, no API call made", async () => {
+  let saveCalled = false;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+      "/api/saved-search/save": () => { saveCalled = true; return { saved: true }; },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showVacancyAlerts();
+  document.getElementById("alerts_job_title").value = "";
+  document.getElementById("alerts_enabled_toggle").checked = true;
+  await window.saveVacancyAlerts();
+  assert.equal(saveCalled, false, "must not call the API with alerts on and no title");
+  assert.match(document.getElementById("vacancy-alerts-result").innerHTML, /job title/i);
+});
+
+test("saving valid alert settings calls the API with the trimmed values and confirms", async () => {
+  let savedBody = null;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+      "/api/saved-search/save": (body) => { savedBody = body; return { saved: true }; },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showVacancyAlerts();
+  document.getElementById("alerts_job_title").value = "Data Analyst";
+  document.getElementById("alerts_location").value = "Tashkent";
+  document.getElementById("alerts_enabled_toggle").checked = true;
+  await window.saveVacancyAlerts();
+  assert.equal(savedBody.job_title, "Data Analyst");
+  assert.equal(savedBody.location, "Tashkent");
+  assert.equal(savedBody.alerts_enabled, true);
+  assert.match(document.getElementById("vacancy-alerts-result").innerHTML, /Saved/);
+});
+
+test("Vacancy Alerts is reachable as Profile's 4th menu item and highlights the Profile tab", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/saved-search": () => ({ job_title: null, location: null, alerts_enabled: false }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.showVacancyAlerts();
+  await flush();
+  assert.equal(document.getElementById("vacancy-alerts-screen").hidden, false);
+  assert.ok(document.getElementById("tab-profile").classList.contains("active"), "Profile tab should stay highlighted");
+});
