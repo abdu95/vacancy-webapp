@@ -230,8 +230,10 @@ test("a vacancy card offers Open link / Copy URL / Match my CV immediately, befo
 
   const cardHtml = document.getElementById("result").innerHTML;
   assert.match(cardHtml, /href="https:\/\/boards\.greenhouse\.io\/acme\/jobs\/1"/, "Open link must point at the real posting URL");
-  assert.match(cardHtml, /Open link/);
-  assert.match(cardHtml, /Copy URL/);
+  // Short, one-line labels on purpose (real feedback: two-line button text
+  // didn't match the single-line height of the buttons below it).
+  assert.match(cardHtml, />🔗 Open</);
+  assert.match(cardHtml, />📋 Copy</);
   assert.match(cardHtml, /Match my CV/);
   // Not gated behind "like it" - the decision block is still showing
   // (untouched), these 3 buttons are available regardless.

@@ -77,8 +77,8 @@ const I18N = {
   status_label_prefix: { en: "Status:", uz: "Holat:", ru: "Статус:" },
   match_suffix: { en: "% match", uz: "% moslik", ru: "% совпадение" },
   view_posting: { en: "View posting →", uz: "E'lonni ko'rish →", ru: "Посмотреть вакансию →" },
-  open_link_btn: { en: "🔗 Open link", uz: "🔗 Havolani ochish", ru: "🔗 Открыть ссылку" },
-  copy_url_btn: { en: "📋 Copy URL", uz: "📋 URL'ni nusxalash", ru: "📋 Скопировать ссылку" },
+  open_link_btn: { en: "🔗 Open", uz: "🔗 Ochish", ru: "🔗 Открыть" },
+  copy_url_btn: { en: "📋 Copy", uz: "📋 Nusxalash", ru: "📋 Копировать" },
   match_my_cv_btn: { en: "🎯 Match my CV", uz: "🎯 CV'imni moslashtirish", ru: "🎯 Сравнить с резюме" },
   copy_url_success: {
     en: "Link copied - paste it into Analyze to run a full check against this job.",
