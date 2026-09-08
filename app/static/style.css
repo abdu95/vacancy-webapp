@@ -65,6 +65,17 @@ textarea { font-family: inherit; resize: vertical; min-height: 120px; }
   font-weight: 600;
 }
 .menu-option .hint { margin: 4px 0 0; font-weight: 400; }
+/* A label introducing the option button right below it (e.g. Home
+   screen's "Search for a vacancy" / "Or analyze your CV") - real user
+   feedback: with plain .hint's symmetric-looking spacing, it read as
+   ambiguous which button a label belonged to. Bolder/darker than .hint
+   (a real lead-in, not fine print) and, more importantly, pulled tight
+   to the button that follows it while staying separated from whatever
+   came before - proximity, not just wording, is what makes "this label
+   belongs to this button" obvious at a glance. */
+.option-label { font-size: 13px; font-weight: 600; color: var(--tg-theme-hint-color, #999999); margin: 8px 0 6px; }
+.menu-option + .option-label { margin-top: 28px; }
+.option-label + .menu-option { margin-top: 6px; }
 .score-bar {
   background: var(--tg-theme-hint-color, #dddddd);
   border-radius: 6px;
