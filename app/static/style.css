@@ -139,10 +139,15 @@ button.nav-chip {
   margin-top: 0;
 }
 .row { display: flex; gap: 8px; margin-top: 16px; }
-.row button { margin-top: 0; }
+/* flex:1 + width:auto on BOTH buttons and the Open-link anchor - button's
+   own base rule sets width:100%, which (left unset here) fights flexbox's
+   sizing and was making buttons in the same row render unevenly instead
+   of splitting the row equally (real bug, caught in review - visible on
+   this row and on the "like it / search again" row below it). */
+.row button { flex: 1; width: auto; margin-top: 0; }
 /* "Open link" on a vacancy card is an <a> (real navigation, not a JS
    handler), styled to match the buttons next to it so the row reads as
-   3 equal actions, not a button pair plus a stray text link. */
+   equal actions, not a button pair plus a stray text link. */
 .row a.btn-link {
   flex: 1;
   display: flex;
