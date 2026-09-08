@@ -230,7 +230,10 @@ async function applyDirectly() {
     renderSaved();
   } catch (err) {
     console.error("Apply failed:", err);
-    actionArea().innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("apply_failed")))}</div>`;
+    actionArea().innerHTML = `
+      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("apply_failed")))}</div>
+      <button onclick="applyDirectly()">${escapeHtml(t("retry_btn"))}</button>
+    `;
   }
   scrollToBottom();
 }
@@ -251,7 +254,10 @@ async function checkFit() {
     renderScoreResult(score);
   } catch (err) {
     console.error("Scoring failed:", err);
-    actionArea().innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("scoring_failed")))}</div>`;
+    actionArea().innerHTML = `
+      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("scoring_failed")))}</div>
+      <button onclick="checkFit()">${escapeHtml(t("retry_btn"))}</button>
+    `;
   }
   scrollToBottom();
 }
@@ -293,7 +299,15 @@ async function getRecommendations(level) {
     renderRecommendations(data.fixes);
   } catch (err) {
     console.error("Recommendations failed:", err);
-    actionArea().innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("recommendations_failed")))}</div>`;
+    // Real user feedback: a failed first attempt was a dead end -
+    // getRecommendations() overwrites actionArea() (including the level
+    // picker that triggered it) the moment it starts, so without a
+    // retry here, recovering meant leaving this vacancy and re-running
+    // "Match my CV" from scratch just to get back to a level picker.
+    actionArea().innerHTML = `
+      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("recommendations_failed")))}</div>
+      <button onclick="getRecommendations('${level}')">${escapeHtml(t("retry_btn"))}</button>
+    `;
   }
   scrollToBottom();
 }

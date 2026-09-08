@@ -186,7 +186,15 @@ async function loadRoadmapItem(item) {
   } catch (err) {
     if (requestId !== state.roadmapRequestSeq) return; // stale error, ignore too
     console.error("Roadmap item failed:", err);
-    areaEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("roadmap_failed_web")))}</div>`;
+    // Real user feedback: a failed first attempt was a dead end - the
+    // "Get Roadmap" button that triggered item 1 is disabled permanently
+    // (see startRoadmap()), so without a retry here the only way forward
+    // was re-entering the JD and re-running the whole analysis from
+    // scratch. This retry re-fetches just this item, nothing upstream.
+    areaEl.innerHTML = `
+      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("roadmap_failed_web")))}</div>
+      <button onclick="loadRoadmapItem(${item})">${escapeHtml(t("retry_btn"))}</button>
+    `;
   }
 }
 

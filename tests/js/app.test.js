@@ -298,6 +298,97 @@ test("Match my CV on the card runs a fit check directly, without requiring 'like
   assert.match(document.getElementById("action-area").innerHTML, /Good fit\./, "checkFit should work immediately from the card, not only after liking the vacancy");
 });
 
+test("a failed fit check offers a retry, not a dead end - real user feedback (worked on the 2nd try, only after redoing everything)", async () => {
+  let calls = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/score-vacancy": () => {
+        calls += 1;
+        return calls === 1 ? { status: 500, body: {} } : { score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." };
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  await window.checkFit();
+  const areaEl = document.getElementById("action-area");
+  assert.match(areaEl.innerHTML, /error/, "the first failed attempt should show an error");
+  const retryBtn = areaEl.querySelector("button");
+  assert.ok(retryBtn, "a retry button must be offered, not just a dead-end error");
+
+  retryBtn.click();
+  await flush();
+  assert.equal(calls, 2, "retry should re-issue the same request, not require re-doing an earlier step");
+  assert.match(areaEl.innerHTML, /Good fit\./);
+});
+
+test("a failed 'apply directly' offers a retry, not a dead end", async () => {
+  let calls = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/apply": () => {
+        calls += 1;
+        return calls === 1 ? { status: 500, body: {} } : { saved: true };
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+  window.likeVacancy();
+
+  await window.applyDirectly();
+  const areaEl = document.getElementById("action-area");
+  const retryBtn = areaEl.querySelector("button");
+  assert.ok(retryBtn, "a retry button must be offered after a failed apply");
+
+  retryBtn.click();
+  await flush();
+  assert.equal(calls, 2);
+  assert.match(areaEl.innerHTML, new RegExp(window.t("saved_confirmation")));
+});
+
+test("a failed 'get recommendations' offers a retry for the SAME level, not a dead end - real user feedback (worked on the 2nd try, only after redoing everything)", async () => {
+  let calls = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/cv-recommendations": (body) => {
+        calls += 1;
+        assert.equal(body.level, "Mid", "the retry must use the exact same level the user originally picked");
+        return calls === 1 ? { status: 500, body: {} } : { fixes: [{ issue: "x", before: "", after: "y" }] };
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  await window.getRecommendations("Mid");
+  const areaEl = document.getElementById("action-area");
+  assert.match(areaEl.innerHTML, /error/, "the first failed attempt should show an error, not silently lose the level picker");
+  const retryBtn = areaEl.querySelector("button");
+  assert.ok(retryBtn, "a retry button must be offered, not a dead end requiring the whole fit-check to be redone");
+
+  retryBtn.click();
+  await flush();
+  assert.equal(calls, 2);
+  assert.match(areaEl.innerHTML, /y/, "the recommendation should render once the retry succeeds");
+});
+
 test("goToAnalysis skips cv-gate and opens the JD box directly once a CV is on file", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
   await flush();
@@ -632,6 +723,43 @@ test("the 'Get Roadmap' button disables itself immediately and stays disabled - 
   assert.equal(btn.disabled, true, "must disable synchronously on click, before the fetch even resolves - that's the whole point");
   await flush();
   assert.equal(btn.disabled, true, "must stay disabled once the roadmap has loaded - clicking it again would only wipe cached progress, never help");
+});
+
+test("a failed roadmap item offers a retry for that SAME item, not a dead end - real user feedback (worked on the 2nd try, only after redoing everything)", async () => {
+  let calls = 0;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cv-jd-analysis": () => FAKE_ANALYSIS,
+      "/api/roadmap-item": (body) => {
+        calls += 1;
+        // Calls 1-2 are the failed attempt and its retry, both for item 1.
+        // A 3rd call for item 2 is the (legitimate, expected) background
+        // prefetch that fires once item 1 successfully renders.
+        if (calls <= 2) assert.equal(body.item, 1, "the retry must re-request the exact same item, not restart from scratch");
+        if (calls === 1) return { status: 500, body: {} };
+        return ROADMAP_RESPONSES[body.item];
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await runAnalysis(window, document);
+
+  window.startRoadmap();
+  await flush();
+  const areaEl = document.getElementById("roadmap-area");
+  assert.match(areaEl.innerHTML, /error/, "the first failed attempt should show an error");
+  // "Get Roadmap" itself stays disabled by design (see the test above) -
+  // the retry button here, not that button, is the actual recovery path.
+  const retryBtn = areaEl.querySelector("button");
+  assert.ok(retryBtn, "a retry button must be offered, not a dead end requiring the whole analysis to be redone");
+
+  retryBtn.click();
+  await flush();
+  assert.ok(calls >= 2, "the retry should have re-issued a request for item 1");
+  assert.match(areaEl.innerHTML, /CV Fixes/, "item 1 should render once the retry succeeds");
 });
 
 test("a stale roadmap-item response (from a request superseded by a newer one) never overwrites the carousel - the actual root cause of 'Next got stuck' / 'thrown back to 1/4'", async () => {
