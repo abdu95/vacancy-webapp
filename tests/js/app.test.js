@@ -118,6 +118,24 @@ test("checkCVAndRoute skips welcome and shows home-screen directly for a returni
   assert.equal(document.getElementById("welcome-screen").hidden, true);
 });
 
+test("each home-screen button has its own intro label above it, not one shared generic hint - real user feedback (Mavlyuda)", async () => {
+  const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
+  await flush();
+  const { document } = dom.window;
+  assert.equal(document.getElementById("home-vacancy-label").textContent, "Search for a vacancy");
+  assert.equal(document.getElementById("home-analyze-label").textContent, "Or analyze your CV");
+
+  // Each label must sit directly before its own button, not be a single
+  // shared hint floating above both - verifies actual DOM order.
+  const children = [...document.getElementById("home-screen").children];
+  assert.equal(children[0].id, "home-vacancy-label");
+  assert.equal(children[1].tagName, "BUTTON");
+  assert.ok(children[1].contains(document.getElementById("home-vacancy-option")), "the vacancy button (right after its label) must be the vacancy-search option");
+  assert.equal(children[2].id, "home-analyze-label");
+  assert.equal(children[3].tagName, "BUTTON");
+  assert.ok(children[3].contains(document.getElementById("home-analyze-option")), "the analyze button (right after its label) must be the CV-analysis option");
+});
+
 test("welcome-screen's continue button reveals the home-screen options", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: false, lang: "en" }) }) });
   await flush();

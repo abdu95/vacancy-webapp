@@ -221,8 +221,11 @@ const I18N = {
   err_generic: {
     en: "Something went wrong. Please try again.", uz: "Nimadir xato ketdi. Qaytadan urinib ko'ring.", ru: "Что-то пошло не так. Попробуйте снова.",
   },
-  home_hint: {
-    en: "Please choose an option:", uz: "Kerakli bo'limni tanlang:", ru: "Пожалуйста, выберите один из вариантов:",
+  home_vacancy_label: {
+    en: "Search for a vacancy", uz: "Vakansiya qidiring", ru: "Найдите вакансию",
+  },
+  home_analyze_label: {
+    en: "Or analyze your CV", uz: "Yoki CV'ingizni tahlil qiling", ru: "Или проанализируйте резюме",
   },
   home_analyze_option: {
     en: "📊 Analyze my CV against a job", uz: "📊 CV'imni ish e'loniga solishtirish", ru: "📊 Сравнить резюме с вакансией",
@@ -456,7 +459,8 @@ function applyStaticTranslations() {
   document.getElementById("cv-gate-hint").textContent = t("cv_gate_hint");
   document.getElementById("cv-file-label").textContent = t("cv_file_label");
   document.getElementById("upload_btn").textContent = t("upload_cv_btn");
-  document.getElementById("home-hint").textContent = t("home_hint");
+  document.getElementById("home-vacancy-label").textContent = t("home_vacancy_label");
+  document.getElementById("home-analyze-label").textContent = t("home_analyze_label");
   document.getElementById("home-analyze-option").textContent = t("home_analyze_option");
   document.getElementById("home-analyze-hint").textContent = t("home_analyze_hint");
   document.getElementById("home-vacancy-option").textContent = t("home_vacancy_option");
