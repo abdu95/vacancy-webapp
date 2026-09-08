@@ -118,7 +118,7 @@ test("checkCVAndRoute skips welcome and shows home-screen directly for a returni
   assert.equal(document.getElementById("welcome-screen").hidden, true);
 });
 
-test("each home-screen button has its own intro label above it, not one shared generic hint - real user feedback (Mavlyuda)", async () => {
+test("each home-screen button has its own intro label above it, not one shared generic hint - real user feedback", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
   await flush();
   const { document } = dom.window;

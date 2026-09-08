@@ -34,7 +34,7 @@ def with_language(prompt: str, language: str | None) -> str:
     Also always appends a "don't say JD" instruction, regardless of
     language: the prompts themselves use "JD" throughout as internal
     shorthand (e.g. cv_fixes.py's "<...which JD requirement...>"), and
-    real user feedback (Gayrat, 2026-09-08 - see
+    real user feedback (2026-09-08 - see
     Accepted AI files/user survey/features_fixes_requested_by_users.md)
     caught the model echoing that literal abbreviation into user-facing
     output ("Проблема: JD требует..."), which isn't self-explanatory to

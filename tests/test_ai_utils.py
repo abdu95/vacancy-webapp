@@ -36,8 +36,8 @@ print("PASS: cv_jd_content_blocks splits CV+JD (cacheable) from the varying prom
 # --- with_language ---
 
 # The "don't say JD" instruction is always appended, regardless of language -
-# real user feedback (Gayrat) caught the model echoing that literal
-# abbreviation into output text, a content bug independent of language.
+# real user feedback caught the model echoing that literal abbreviation
+# into output text, a content bug independent of language.
 en_prompt = with_language("PROMPT", "en")
 assert en_prompt.startswith("PROMPT") and "JD" in en_prompt and "job description" in en_prompt
 assert "Russian" not in en_prompt and "Uzbek" not in en_prompt, "English must still get no language instruction"
