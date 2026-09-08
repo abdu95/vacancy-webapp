@@ -419,18 +419,55 @@ test("Prev returns to an already-fetched item instantly, without a new API call"
   await flush();
   window.loadRoadmapItem(2);
   await flush();
-  assert.equal(getFetchCount(), 2, "items 1 and 2 should each have been fetched once");
+  // 3, not 2: items 1 and 2 each fetched once, plus item 2's render chains
+  // into a background prefetch of item 3 - the same "one ahead" mechanism
+  // exercised in the dedicated prefetch test above. Nothing below this
+  // point should add a 4th call.
+  assert.equal(getFetchCount(), 3, "items 1 and 2 should each have been fetched once (plus item 2 prefetching item 3)");
 
   window.loadRoadmapItem(1); // Prev
   await flush();
   const area = document.getElementById("roadmap-area");
   assert.match(area.innerHTML, /CV Fixes/);
   assert.match(area.innerHTML, /1 \/ 4/);
-  assert.equal(getFetchCount(), 2, "going back to item 1 must be served from cache, not re-fetched");
+  assert.equal(getFetchCount(), 3, "going back to item 1 must be served from cache, not re-fetched");
 
   window.loadRoadmapItem(2); // forward again - also cached
   await flush();
-  assert.equal(getFetchCount(), 2, "revisiting item 2 must also be served from cache");
+  assert.equal(getFetchCount(), 3, "revisiting item 2 must also be served from cache");
+});
+
+test("the next roadmap item is prefetched in the background while the current one is on screen - Next doesn't wait, and doesn't double-fetch", async () => {
+  const callsPerItem = {};
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cv-jd-analysis": () => FAKE_ANALYSIS,
+      "/api/roadmap-item": (body) => {
+        callsPerItem[body.item] = (callsPerItem[body.item] || 0) + 1;
+        return ROADMAP_RESPONSES[body.item];
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await runAnalysis(window, document);
+
+  window.startRoadmap();
+  await flush(6); // let item 1 render AND its background prefetch of item 2 resolve
+  assert.deepEqual(callsPerItem, { 1: 1, 2: 1 }, "item 2 should already be fetched in the background before Next is ever clicked");
+  assert.match(document.getElementById("roadmap-area").innerHTML, /CV Fixes/, "the visible screen must still show item 1 - prefetching must not jump the UI ahead");
+
+  window.loadRoadmapItem(2);
+  await flush();
+  // Item 3 shows up here too: rendering item 2 (is_last: false) chains into
+  // prefetching item 3, the same mechanism one item ahead - intended, every
+  // "Next" should feel instant, not just the first one. The actual point of
+  // this assertion is item 2 staying at exactly 1 - reusing its prefetch,
+  // never fetching it a second time.
+  assert.deepEqual(callsPerItem, { 1: 1, 2: 1, 3: 1 }, "clicking Next must reuse item 2's prefetch rather than re-fetching it");
+  assert.match(document.getElementById("roadmap-area").innerHTML, /Phone Screen Strategy/);
 });
 
 test("Prev is disabled on the first item; Next is disabled on the last", async () => {
@@ -476,7 +513,10 @@ test("each roadmap-item request threads the analysis_id through, for My Checks h
   await flush();
   window.loadRoadmapItem(2);
   await flush();
-  assert.deepEqual(seenAnalysisIds, [42, 42], "every roadmap-item call should carry the analysis_id from the initial analysis response");
+  // 3 calls, not 2: item 1, item 2, and item 2's render chaining into a
+  // background prefetch of item 3 - every one of them must still carry
+  // the same analysis_id, which is what this test actually checks.
+  assert.deepEqual(seenAnalysisIds, [42, 42, 42], "every roadmap-item call, including background prefetches, should carry the analysis_id from the initial analysis response");
 });
 
 test("the 'Get Roadmap' button disables itself immediately and stays disabled - real bug: it was clickable through its own load, letting an impatient double-click fire two concurrent requests", async () => {

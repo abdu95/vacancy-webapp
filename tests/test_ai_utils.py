@@ -35,14 +35,24 @@ print("PASS: cv_jd_content_blocks splits CV+JD (cacheable) from the varying prom
 
 # --- with_language ---
 
-assert with_language("PROMPT", "en") == "PROMPT", "English must be a no-op - byte-identical to before this existed"
-assert with_language("PROMPT", None) == "PROMPT"
-assert with_language("PROMPT", "fr") == "PROMPT", "an unrecognized code must also be a no-op, not raise"
+# The "don't say JD" instruction is always appended, regardless of language -
+# real user feedback (Gayrat) caught the model echoing that literal
+# abbreviation into output text, a content bug independent of language.
+en_prompt = with_language("PROMPT", "en")
+assert en_prompt.startswith("PROMPT") and "JD" in en_prompt and "job description" in en_prompt
+assert "Russian" not in en_prompt and "Uzbek" not in en_prompt, "English must still get no language instruction"
+
+none_prompt = with_language("PROMPT", None)
+assert none_prompt == en_prompt, "no language code should behave exactly like English - JD instruction, no language instruction"
+
+fr_prompt = with_language("PROMPT", "fr")
+assert fr_prompt == en_prompt, "an unrecognized code should also behave like English"
+
 ru_prompt = with_language("PROMPT", "ru")
-assert ru_prompt != "PROMPT" and "Russian" in ru_prompt and ru_prompt.startswith("PROMPT")
+assert ru_prompt != en_prompt and "Russian" in ru_prompt and ru_prompt.startswith(en_prompt)
 uz_prompt = with_language("PROMPT", "uz")
-assert uz_prompt != "PROMPT" and "Uzbek" in uz_prompt
-print("PASS: with_language is a no-op for English/unknown codes, appends a real instruction for ru/uz")
+assert uz_prompt != en_prompt and "Uzbek" in uz_prompt
+print("PASS: with_language always appends the JD instruction, is otherwise a no-op for English/unknown codes, and appends a real language instruction for ru/uz")
 
 # --- extract_json ---
 

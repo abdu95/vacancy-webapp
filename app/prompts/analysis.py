@@ -120,15 +120,18 @@ The candidate's CV and the target job description (JD) are provided.
 DEPTH: one achievable portfolio project, not three — quality over quantity.
 {NO_PREAMBLE}
 
-Write ONLY this section:
+Write ONLY this section, one **bolded label** plus its content per line
+(translate each label into the target language if not writing in English,
+keeping the same meaning - do not leave labels in English for a non-English
+response):
 
 ### Portfolio Project
-Name: [project name relevant to the JD domain]
-Stack: [specific tools from the JD — free tier where possible]
-Dataset: [specific public dataset with URL, relevant to the JD industry if possible]
-What to build: [3-4 sentences — exactly what to build]
-What it demonstrates: [which specific JD requirements it proves]
-How to present: [GitHub README structure and how to add it to the CV]
+**Name:** [project name relevant to the job description's domain]
+**Stack:** [specific tools from the job description — free tier where possible]
+**Dataset:** [specific public dataset with URL, relevant to the job description's industry if possible]
+**What to build:** [3-4 sentences — exactly what to build]
+**What it demonstrates:** [which specific job-description requirements it proves]
+**How to present:** [GitHub README structure and how to add it to the CV]
 """
 
 ROADMAP_PRE_JUNIOR_ITEM3 = f"""
@@ -187,12 +190,15 @@ LENGTH: be terse. Each line below is ONE sentence, no sub-points, no extra
 paragraphs before or after. Total under 80 words.
 {NO_PREAMBLE}
 
-Write ONLY this section, in exactly this format (one sentence per line):
+Write ONLY this section, one **bolded label** plus one sentence per line
+(translate each label into the target language if not writing in English,
+keeping the same meaning - do not leave labels in English for a non-English
+response):
 
 ### Phone Screen Strategy
-Opening line: [one exact sentence to open "tell me about yourself" — referencing their strongest credential]
-Key project to lead with: [one sentence naming the CV project and why it maps to this JD]
-How to handle gaps: [one sentence on how to address missing JD requirements honestly]
+**Opening line:** [one exact sentence to open "tell me about yourself" — referencing their strongest credential]
+**Key project to lead with:** [one sentence naming the CV project and why it maps to this job description]
+**How to handle gaps:** [one sentence on how to address missing job-description requirements honestly]
 """
 
 ROADMAP_JUNIOR_ITEM3 = f"""
@@ -268,12 +274,15 @@ LENGTH: be terse. Each line below is ONE sentence, no sub-points, no extra
 paragraphs before or after. Total under 80 words.
 {NO_PREAMBLE}
 
-Write ONLY this section, in exactly this format (one sentence per line):
+Write ONLY this section, one **bolded label** plus one sentence per line
+(translate each label into the target language if not writing in English,
+keeping the same meaning - do not leave labels in English for a non-English
+response):
 
 ### Phone Screen Strategy
-Opening line: [one exact sentence to open "tell me about yourself" — signalling ownership and impact]
-Key project to lead with: [one sentence naming the project that shows end-to-end ownership most relevant to this JD]
-How to position seniority: [one sentence on how to show readiness to lead, not just contribute]
+**Opening line:** [one exact sentence to open "tell me about yourself" — signalling ownership and impact]
+**Key project to lead with:** [one sentence naming the project that shows end-to-end ownership most relevant to this job description]
+**How to position seniority:** [one sentence on how to show readiness to lead, not just contribute]
 """
 
 ROADMAP_MID_ITEM3 = f"""
@@ -350,12 +359,15 @@ LENGTH: be terse. Each line below is ONE sentence, no sub-points, no extra
 paragraphs before or after. Total under 80 words.
 {NO_PREAMBLE}
 
-Write ONLY this section, in exactly this format (one sentence per line):
+Write ONLY this section, one **bolded label** plus one sentence per line
+(translate each label into the target language if not writing in English,
+keeping the same meaning - do not leave labels in English for a non-English
+response):
 
 ### Phone Screen Strategy
-Opening line: [one exact sentence to open "tell me about yourself" — signalling seniority and scope]
-Key story to lead with: [one sentence naming the initiative that shows cross-team leadership most relevant to this JD]
-How to signal readiness for staff/lead: [one sentence with specific language and framing tied to this JD]
+**Opening line:** [one exact sentence to open "tell me about yourself" — signalling seniority and scope]
+**Key story to lead with:** [one sentence naming the initiative that shows cross-team leadership most relevant to this job description]
+**How to signal readiness for staff/lead:** [one sentence with specific language and framing tied to this job description]
 """
 
 ROADMAP_SENIOR_ITEM3 = f"""

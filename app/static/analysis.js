@@ -115,8 +115,39 @@ function startRoadmap() {
   state.roadmapItems = [];
   state.roadmapIndex = -1;
   state.roadmapRequestSeq = (state.roadmapRequestSeq || 0) + 1;
+  state.roadmapPrefetch = {};
   document.getElementById("roadmap-area").innerHTML = "";
   loadRoadmapItem(1);
+}
+
+// Prefetches the item after the one currently on screen, so by the time a
+// user (who read the current item first, per real feedback that "Next"
+// felt slow) actually clicks Next, it's often already there. Guarded
+// against a mid-flight startRoadmap() reset by capturing the *array
+// object* state.roadmapItems pointed to when the prefetch began -
+// startRoadmap() reassigns to a brand-new array, so a stale prefetch
+// resolving after a restart can never write into the new roadmap's data,
+// while ordinary Prev/Next navigation (which never reassigns the array)
+// doesn't invalidate it. Failures are swallowed - if the prefetch fails,
+// the real Next click just falls through to a normal fetch, no different
+// from before this existed.
+function prefetchNextRoadmapItem(item) {
+  const cacheIndex = item - 1;
+  if (state.roadmapItems[cacheIndex] || state.roadmapPrefetch[item]) return;
+  const itemsAtStart = state.roadmapItems;
+  state.roadmapPrefetch[item] = callApi("/api/roadmap-item", {
+    jd: state.jd, level: state.analysisLevel, item, analysis_id: state.currentAnalysisId,
+  }).then(data => {
+    if (state.roadmapItems === itemsAtStart && !state.roadmapItems[cacheIndex]) {
+      state.roadmapItems[cacheIndex] = data;
+    }
+    return data;
+  }).catch(err => {
+    console.error("Roadmap prefetch failed (non-fatal, Next will just fetch normally):", err);
+    throw err;
+  }).finally(() => {
+    delete state.roadmapPrefetch[item];
+  });
 }
 
 // Horizontal carousel, same pattern as the vacancy carousel: fetched
@@ -143,9 +174,11 @@ async function loadRoadmapItem(item) {
   const areaEl = document.getElementById("roadmap-area");
   areaEl.innerHTML = `<div class="hint">${escapeHtml(t("analyzing_message_web"))}</div>`;
   try {
-    const data = await callApi("/api/roadmap-item", {
+    // Reuse an in-flight prefetch for this exact item if one exists,
+    // instead of firing a second (real, paid) API call for the same item.
+    const data = await (state.roadmapPrefetch[item] || callApi("/api/roadmap-item", {
       jd: state.jd, level: state.analysisLevel, item, analysis_id: state.currentAnalysisId,
-    });
+    }));
     if (requestId !== state.roadmapRequestSeq) return; // superseded by a newer navigation - discard
     state.roadmapItems[cacheIndex] = data;
     state.roadmapIndex = cacheIndex;
@@ -189,6 +222,7 @@ function renderRoadmapCarousel() {
   const total = roadmapTotalFor(state.analysisLevel);
   const canPrev = idx > 0;
   const canNext = !data.is_last;
+  if (canNext) prefetchNextRoadmapItem(item + 1);
 
   areaEl.innerHTML = `
     <h3 style="margin-top:16px;">${escapeHtml(data.title)}</h3>

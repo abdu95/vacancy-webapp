@@ -27,9 +27,27 @@ def with_language(prompt: str, language: str | None) -> str:
     translate, and reads more natural). Only touches the freeform prose
     fields in practice, since every prompt's JSON schema already pins
     its own keys/control values in English regardless of language.
-    A no-op for English or an unrecognized/missing language code, so
-    existing English behavior is completely unaffected.
+    A no-op for English or an unrecognized/missing language code
+    *beyond* the always-on JD instruction below, so pre-existing English
+    behavior is otherwise unaffected.
+
+    Also always appends a "don't say JD" instruction, regardless of
+    language: the prompts themselves use "JD" throughout as internal
+    shorthand (e.g. cv_fixes.py's "<...which JD requirement...>"), and
+    real user feedback (Gayrat, 2026-09-08 - see
+    Accepted AI files/user survey/features_fixes_requested_by_users.md)
+    caught the model echoing that literal abbreviation into user-facing
+    output ("Проблема: JD требует..."), which isn't self-explanatory to
+    someone unfamiliar with recruiting jargon. This is a real-content
+    bug independent of language, so it belongs here rather than folded
+    into the Russian/Uzbek-only instruction below.
     """
+    prompt = prompt + (
+        "\n\nNever use the abbreviation \"JD\" anywhere in your output text - "
+        "say \"the job description\" or name the actual role instead. JD is "
+        "internal shorthand only, not something a candidate reading your "
+        "output would recognize."
+    )
     name = _LANGUAGE_NAMES.get(language)
     if not name:
         return prompt

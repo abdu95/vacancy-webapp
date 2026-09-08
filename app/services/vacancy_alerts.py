@@ -40,7 +40,10 @@ async def _send_telegram_message(telegram_id: int, text: str) -> None:
     }
     if MINI_APP_URL:
         payload["reply_markup"] = {
-            "inline_keyboard": [[{"text": "Open AcceptedAI", "web_app": {"url": MINI_APP_URL}}]]
+            # A generic "Open AcceptedAI" button gave no reason to actually
+            # tap it - naming the specific, valuable action (checking fit
+            # against the new vacancy) is what should pull someone back in.
+            "inline_keyboard": [[{"text": "🎯 Check if your CV matches", "web_app": {"url": MINI_APP_URL}}]]
         }
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json=payload)

@@ -25,7 +25,7 @@ const state = {
   vacancies: [], vacancyIndex: -1, improveCount: 0,
   jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
-  roadmapItems: [], roadmapIndex: -1, roadmapRequestSeq: 0,
+  roadmapItems: [], roadmapIndex: -1, roadmapRequestSeq: 0, roadmapPrefetch: {},
 };
 const MAX_SEARCHES = 3;
 const MAX_IMPROVES = 2;
