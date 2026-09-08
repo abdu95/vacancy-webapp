@@ -215,6 +215,87 @@ test("checking a vacancy's fit routes to cv-gate when no CV is on file, and resu
   assert.match(document.getElementById("action-area").innerHTML, /Good fit\./, "checkFit should have re-run automatically after upload");
 });
 
+test("a vacancy card offers Open link / Copy URL / Match my CV immediately, before deciding to 'like' it - closes the vacancy-search-to-CV-analysis loop", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://boards.greenhouse.io/acme/jobs/1", summary: "..." }] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  const cardHtml = document.getElementById("result").innerHTML;
+  assert.match(cardHtml, /href="https:\/\/boards\.greenhouse\.io\/acme\/jobs\/1"/, "Open link must point at the real posting URL");
+  assert.match(cardHtml, /Open link/);
+  assert.match(cardHtml, /Copy URL/);
+  assert.match(cardHtml, /Match my CV/);
+  // Not gated behind "like it" - the decision block is still showing
+  // (untouched), these 3 buttons are available regardless.
+  assert.equal(document.getElementById("vacancy-decision").hidden, false);
+});
+
+test("Copy URL copies the vacancy's real link to the clipboard and confirms it, mentioning where to paste it", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://boards.greenhouse.io/acme/jobs/1", summary: "..." }] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  let copiedText = null;
+  window.navigator.clipboard = { writeText: (text) => { copiedText = text; return Promise.resolve(); } };
+
+  await window.copyVacancyUrl();
+  assert.equal(copiedText, "https://boards.greenhouse.io/acme/jobs/1");
+  assert.match(document.getElementById("copy-url-result").innerHTML, /paste it into Analyze/i);
+});
+
+test("Copy URL shows a friendly error if the clipboard write fails, instead of silently doing nothing", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  window.navigator.clipboard = { writeText: () => Promise.reject(new Error("denied")) };
+  await window.copyVacancyUrl();
+  assert.match(document.getElementById("copy-url-result").innerHTML, /error/);
+});
+
+test("Match my CV on the card runs a fit check directly, without requiring 'like it' first", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/score-vacancy": () => ({ score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  assert.equal(document.getElementById("vacancy-decision").hidden, false, "sanity check: 'like it' was never clicked");
+  await window.checkFit();
+  assert.match(document.getElementById("action-area").innerHTML, /Good fit\./, "checkFit should work immediately from the card, not only after liking the vacancy");
+});
+
 test("goToAnalysis skips cv-gate and opens the JD box directly once a CV is on file", async () => {
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "en" }) }) });
   await flush();

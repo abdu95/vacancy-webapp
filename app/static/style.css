@@ -140,6 +140,23 @@ button.nav-chip {
 }
 .row { display: flex; gap: 8px; margin-top: 16px; }
 .row button { margin-top: 0; }
+/* "Open link" on a vacancy card is an <a> (real navigation, not a JS
+   handler), styled to match the buttons next to it so the row reads as
+   3 equal actions, not a button pair plus a stray text link. */
+.row a.btn-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  font-size: 15px;
+  font-weight: 600;
+}
 .spinner {
   width: 28px;
   height: 28px;

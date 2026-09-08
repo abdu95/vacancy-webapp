@@ -122,6 +122,34 @@ function showVacancy(index) {
   renderVacancyCard();
 }
 
+// Closes the loop between vacancy search and CV analysis (real user
+// feedback: no way to take a vacancy found here into the deeper
+// CV-vs-job analysis) - copies the posting's URL so it can be pasted
+// into the Analyze tab's JD box, which already accepts a link.
+async function copyVacancyUrl() {
+  const url = currentVacancy().url;
+  const resultEl = document.getElementById("copy-url-result");
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      // Fallback for WebViews without the async Clipboard API.
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    resultEl.innerHTML = `<div class="hint">${escapeHtml(t("copy_url_success"))}</div>`;
+  } catch (err) {
+    console.error("Copy vacancy URL failed:", err);
+    resultEl.innerHTML = `<div class="error">${escapeHtml(t("copy_url_failed"))}</div>`;
+  }
+}
+
 function renderVacancyCard() {
   const resultEl = document.getElementById("result");
   const total = state.vacancies.length;
@@ -139,7 +167,12 @@ function renderVacancyCard() {
       <h3>${escapeHtml(v.title)}</h3>
       <div class="company">${escapeHtml(v.company)} · ${escapeHtml(v.location)}</div>
       <p>${escapeHtml(v.summary)}</p>
-      <a href="${v.url}" target="_blank">${escapeHtml(t("view_posting"))}</a>
+      <div class="row">
+        <a class="btn-link" href="${escapeHtml(v.url)}" target="_blank">${escapeHtml(t("open_link_btn"))}</a>
+        <button class="secondary" onclick="copyVacancyUrl()">${escapeHtml(t("copy_url_btn"))}</button>
+      </div>
+      <button onclick="checkFit()">${escapeHtml(t("match_my_cv_btn"))}</button>
+      <div id="copy-url-result"></div>
     </div>
     <div id="vacancy-decision">
       ${total > 1 ? `

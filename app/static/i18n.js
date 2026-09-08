@@ -77,6 +77,17 @@ const I18N = {
   status_label_prefix: { en: "Status:", uz: "Holat:", ru: "Статус:" },
   match_suffix: { en: "% match", uz: "% moslik", ru: "% совпадение" },
   view_posting: { en: "View posting →", uz: "E'lonni ko'rish →", ru: "Посмотреть вакансию →" },
+  open_link_btn: { en: "🔗 Open link", uz: "🔗 Havolani ochish", ru: "🔗 Открыть ссылку" },
+  copy_url_btn: { en: "📋 Copy URL", uz: "📋 URL'ni nusxalash", ru: "📋 Скопировать ссылку" },
+  match_my_cv_btn: { en: "🎯 Match my CV", uz: "🎯 CV'imni moslashtirish", ru: "🎯 Сравнить с резюме" },
+  copy_url_success: {
+    en: "Link copied - paste it into Analyze to run a full check against this job.",
+    uz: "Havola nusxalandi - ushbu ish e'loniga to'liq tahlil qilish uchun Tahlil bo'limiga joylashtiring.",
+    ru: "Ссылка скопирована - вставьте её в разделе «Анализ» для полной проверки по этой вакансии.",
+  },
+  copy_url_failed: {
+    en: "Couldn't copy the link, try again.", uz: "Havolani nusxalab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось скопировать ссылку, попробуйте снова.",
+  },
   search_limit_session: {
     en: "You've used your 3 free searches for this job title.",
     uz: "Ushbu lavozim uchun 3 ta bepul qidiruvingizdan foydalandingiz.",
