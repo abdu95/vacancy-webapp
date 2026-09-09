@@ -1216,6 +1216,25 @@ test("an empty check history explains why and offers a button straight into the 
   assert.equal(document.getElementById("analysis-screen").hidden, false, "the CTA button must actually navigate to the analysis screen");
 });
 
+test("a user whose checks predate My Checks history sees an honest explanation, not a false 'never checked' claim", async () => {
+  // Real bug (2026-09-09): a paying user who'd completed 3 checks before
+  // this history table existed saw "You haven't checked a CV yet" - false,
+  // and read as data loss. checks_used > 0 with an empty list must render
+  // the "ran before history existed" message instead.
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/checks": () => ({ checks: [], checks_used: 3 }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyChecks();
+  const html = document.getElementById("my-checks-list").innerHTML;
+  assert.doesNotMatch(html, /haven't checked a CV yet/i);
+  assert.match(html, /ran before this history page existed/i);
+});
+
 test("opening a check's detail shows the full JD, ATS/XYZ/Tools/Level, and every saved roadmap item", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({

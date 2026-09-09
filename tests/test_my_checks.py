@@ -48,12 +48,25 @@ FAKE_CHECK_DETAIL = {
 
 # --- Test 1: list checks returns the user's saved analysis history ---
 with mock.patch.object(db, "ensure_user"), \
-     mock.patch.object(db, "list_analyses", return_value=FAKE_CHECKS) as m_list:
+     mock.patch.object(db, "list_analyses", return_value=FAKE_CHECKS) as m_list, \
+     mock.patch.object(db, "get_quota_status", return_value=(2, 5)):
     resp = client.post("/api/checks", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"checks": FAKE_CHECKS}
+    assert resp.json() == {"checks": FAKE_CHECKS, "checks_used": 2}
     m_list.assert_called_once_with(777)
 print("PASS: /api/checks lists the caller's saved analysis history")
+
+# --- Test 1b: checks_used is included even when history is empty - lets the
+# frontend tell "never checked" apart from "checked before history existed"
+# (real bug: a paying user who'd checked 3 times before My Checks shipped
+# saw "You haven't checked a CV yet", which was false and read as data loss) ---
+with mock.patch.object(db, "ensure_user"), \
+     mock.patch.object(db, "list_analyses", return_value=[]), \
+     mock.patch.object(db, "get_quota_status", return_value=(3, 3)):
+    resp = client.post("/api/checks", json={"init_data": init_data})
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"checks": [], "checks_used": 3}
+print("PASS: /api/checks reports checks_used alongside an empty history list")
 
 # --- Test 2: get returns full detail for an owned check ---
 with mock.patch.object(db, "ensure_user"), \

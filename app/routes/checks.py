@@ -16,7 +16,8 @@ class ChecksRequest(BaseModel):
 @router.post("/api/checks")
 async def list_checks(req: ChecksRequest):
     user = authenticate(req.init_data)
-    return {"checks": db.list_analyses(user["id"])}
+    checks_used, _ = db.get_quota_status(user["id"])
+    return {"checks": db.list_analyses(user["id"]), "checks_used": checks_used}
 
 
 class GetCheckRequest(BaseModel):

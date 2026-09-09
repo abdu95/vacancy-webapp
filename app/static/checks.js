@@ -38,6 +38,7 @@ async function showChecksScreen() {
 
 // ── My Checks (analysis history, mirrors the My CVs/Applications list/detail pattern) ──
 let allChecks = [];
+let checksUsedBeforeHistory = 0;
 
 async function showMyChecks() {
   showScreen("my-checks-screen");
@@ -48,6 +49,7 @@ async function showMyChecks() {
   try {
     const data = await callApi("/api/checks", {});
     allChecks = data.checks || [];
+    checksUsedBeforeHistory = data.checks_used || 0;
     renderMyChecksList();
   } catch (err) {
     console.error("Loading checks failed:", err);
@@ -63,8 +65,9 @@ function jdPreview(jdText) {
 function renderMyChecksList() {
   const listEl = document.getElementById("my-checks-list");
   if (allChecks.length === 0) {
+    const emptyMsg = checksUsedBeforeHistory > 0 ? "my_checks_empty_predates_history" : "my_checks_empty";
     listEl.innerHTML = `
-      <div class="prompt-block">${escapeHtml(t("my_checks_empty"))}</div>
+      <div class="prompt-block">${escapeHtml(t(emptyMsg))}</div>
       <button onclick="goToAnalysis()">${escapeHtml(t("home_analyze_option"))}</button>
     `;
     return;

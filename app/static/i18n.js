@@ -426,6 +426,18 @@ const I18N = {
     uz: "Siz hali CV tekshiruvidan o'tmagansiz. Tahlilni shu yerda ko'rish uchun avval CV'ingizni ish e'loniga solishtiring:",
     ru: "Вы ещё не проверяли резюме. Чтобы увидеть анализ здесь, сначала сравните резюме с вакансией:",
   },
+  // Shown instead of my_checks_empty when checks_used > 0 but the list is
+  // still empty - i.e. every one of this user's checks ran before My Checks
+  // history existed (shipped 2026-09-07). "You haven't checked a CV yet" is
+  // false for these users (real report: a paying user who'd checked 3 times
+  // saw it and understandably read it as data loss / a bug) - this is the
+  // honest version: their old checks are real, just never saved anywhere,
+  // and can't be recovered.
+  my_checks_empty_predates_history: {
+    en: "Your earlier checks ran before this history page existed, so they were never saved — nothing was lost, there's just nothing to show for them. Checks from now on will appear here:",
+    uz: "Avvalgi tekshiruvlaringiz ushbu tarix sahifasi mavjud bo'lishidan oldin bajarilgan, shuning uchun ular saqlanmagan — hech narsa yo'qolmagan, faqat ko'rsatadigan narsa yo'q. Bundan buyongi tekshiruvlar shu yerda ko'rinadi:",
+    ru: "Ваши предыдущие проверки прошли до появления этой страницы истории, поэтому они не сохранились — ничего не потеряно, просто показывать нечего. Проверки начиная с сейчас будут отображаться здесь:",
+  },
   my_checks_load_failed: {
     en: "Couldn't load your checks.", uz: "Tekshiruvlaringizni yuklab bo'lmadi.", ru: "Не удалось загрузить ваши проверки.",
   },
