@@ -99,6 +99,25 @@ function goToAnalysis() {
   document.getElementById("jd-input-box").hidden = false;
   document.getElementById("analysis-result").innerHTML = "";
   showScreen("analysis-screen");
+  updateActiveCvIndicator();
+}
+
+// Shows which CV will actually be used, since with multiple saved CVs
+// there was previously no way to tell from the Analyze screen itself -
+// tapping it goes straight to My CVs to switch. Best-effort: a failed
+// fetch just leaves the indicator hidden rather than blocking analysis.
+async function updateActiveCvIndicator() {
+  const btn = document.getElementById("active-cv-indicator");
+  btn.hidden = true;
+  try {
+    const data = await callApi("/api/cvs", {});
+    const active = (data.cvs || []).find(cv => cv.is_active);
+    if (!active) return;
+    btn.textContent = t("active_cv_indicator", { label: active.label });
+    btn.hidden = false;
+  } catch (err) {
+    console.error("Couldn't load the active CV indicator:", err);
+  }
 }
 
 function scrollToBottom() {

@@ -398,6 +398,58 @@ test("goToAnalysis skips cv-gate and opens the JD box directly once a CV is on f
   assert.equal(document.getElementById("jd-input-box").hidden, false);
 });
 
+test("the Analyze screen shows which CV is active - real tester feedback: with multiple CVs saved, nothing said which one would be used", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cvs": () => ({
+        cvs: [
+          { id: 1, label: "Old CV.pdf", created_at: "2026-08-01T00:00:00", is_active: false },
+          { id: 2, label: "Updated CV.pdf", created_at: "2026-09-01T00:00:00", is_active: true },
+        ],
+      }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await flush();
+  const indicator = document.getElementById("active-cv-indicator");
+  assert.equal(indicator.hidden, false);
+  assert.match(indicator.textContent, /Updated CV\.pdf/);
+  assert.doesNotMatch(indicator.textContent, /Old CV\.pdf/);
+});
+
+test("tapping the active-CV indicator goes straight to My CVs to switch it", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cvs": () => ({ cvs: [{ id: 1, label: "My CV.pdf", created_at: "2026-09-01T00:00:00", is_active: true }] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await flush();
+  document.getElementById("active-cv-indicator").click();
+  await flush();
+  assert.equal(document.getElementById("my-cvs-screen").hidden, false);
+});
+
+test("no active CV in the list leaves the indicator hidden instead of showing something wrong", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cvs": () => ({ cvs: [] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  await flush();
+  assert.equal(document.getElementById("active-cv-indicator").hidden, true);
+});
+
 test("uploading a CV after goToAnalysis lands on the analysis screen (not home)", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({

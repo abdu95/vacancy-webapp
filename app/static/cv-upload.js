@@ -35,6 +35,7 @@ async function uploadCV() {
       document.getElementById("jd-input-box").hidden = false;
       document.getElementById("analysis-result").innerHTML = "";
       showScreen("analysis-screen");
+      updateActiveCvIndicator();
     } else if (state.postUploadDestination === "vacancy") {
       state.postUploadDestination = null;
       showScreen("title-screen");

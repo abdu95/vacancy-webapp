@@ -266,6 +266,14 @@ const I18N = {
     ru: "Вставьте сюда полный текст вакансии или ссылку на неё…",
   },
   analyze_btn: { en: "🤖 Analyze", uz: "🤖 Tahlil qilish", ru: "🤖 Анализировать" },
+  // Real tester feedback (2026-09-09): with multiple CVs in My CVs, nothing
+  // on the Analyze screen said which one would actually be used. Tapping
+  // this goes straight to My CVs to switch it.
+  active_cv_indicator: {
+    en: "📄 Using: {label} — tap to change",
+    uz: "📄 Ishlatilmoqda: {label} — o'zgartirish uchun bosing",
+    ru: "📄 Используется: {label} — нажмите, чтобы изменить",
+  },
   jd_too_short_web: {
     en: "Paste a fuller job description (at least 100 characters), or a link to the posting.",
     uz: "To'liqroq ish e'loni matnini (kamida 100 belgi) yoki e'lon havolasini joylashtiring.",
