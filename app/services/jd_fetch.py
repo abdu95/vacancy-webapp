@@ -26,7 +26,15 @@ def looks_like_url(text: str) -> bool:
 
 
 def _extract_text(raw_html: str) -> str:
-    text = re.sub(r"<(script|style|nav|header|footer)[^>]*>.*?</\1>", " ", raw_html,
+    # noscript/template are never part of the rendered page in a real
+    # browser (template's content isn't part of the DOM at all; noscript
+    # only shows with JS disabled) - without excluding them, a site that
+    # uses either leaks straight into the "extracted" text. Real case
+    # (hh.uz, 2026-09-09): a <template id="HH-Lux-InitialState"> hydration
+    # blob alone was ~154KB of raw redirect/banner config JSON, which blew
+    # right past _MAX_CHARS and left almost no room for the actual vacancy
+    # text in what got sent to the model.
+    text = re.sub(r"<(script|style|nav|header|footer|noscript|template)[^>]*>.*?</\1>", " ", raw_html,
                   flags=re.IGNORECASE | re.DOTALL)
     text = html.unescape(html.unescape(text))
     text = re.sub(r"<[^>]+>", " ", text)
