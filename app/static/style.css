@@ -198,6 +198,10 @@ button.nav-chip {
 .card h3 { margin: 0 0 4px; font-size: 16px; }
 .card .company { color: var(--tg-theme-hint-color, #999999); font-size: 13px; margin-bottom: 8px; }
 .card a { color: var(--tg-theme-link-color, #2481cc); }
+.file-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.file-picker .hint { margin-bottom: 0; }
+.card.active-cv { border-color: #2e9e44; }
+.active-cv-badge { color: #2e9e44; font-weight: 600; font-size: 13px; }
 .error { color: #d33; font-size: 14px; }
 .chip {
   display: inline-block;

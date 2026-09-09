@@ -1,5 +1,15 @@
 // CV upload (cv-gate) and My CVs (list/detail, switch active, delete).
 
+// Shared by both upload screens (cv-gate's cv_file, My CVs' new_cv_file) -
+// shows which file was actually picked, since the native file input's own
+// button was replaced with a styled/translated trigger (see index.html).
+function onFileChosen(inputId, nameElId) {
+  const input = document.getElementById(inputId);
+  const nameEl = document.getElementById(nameElId);
+  const file = input.files[0];
+  nameEl.textContent = file ? t("file_chosen_label", { name: file.name }) : t("no_file_chosen");
+}
+
 async function uploadCV() {
   const fileInput = document.getElementById("cv_file");
   const resultEl = document.getElementById("upload_result");
@@ -69,6 +79,7 @@ async function showMyCvs() {
   document.getElementById("my-cvs-list-section").hidden = false;
   document.getElementById("my-cvs-upload-result").innerHTML = "";
   document.getElementById("new_cv_file").value = "";
+  document.getElementById("new_cv_file_name").textContent = t("no_file_chosen");
   const listEl = document.getElementById("my-cvs-list");
   listEl.innerHTML = `<div class="hint">…</div>`;
   try {
@@ -81,9 +92,12 @@ async function showMyCvs() {
   }
 }
 
-// List shows only the two things asked for - filename and upload date.
-// Everything else (position, active status, actions) lives behind the
-// detail view, same split as the Applications list/detail.
+// List shows filename, upload date, and - real tester feedback
+// (2026-09-09): with several CVs saved, there was no way to tell which
+// one was active without opening each one - a green highlight + badge for
+// whichever is active. Everything else (position, the "use this CV"
+// action) still lives behind the detail view, same split as the
+// Applications list/detail.
 function renderMyCvsList() {
   const listEl = document.getElementById("my-cvs-list");
   if (allCvs.length === 0) {
@@ -91,9 +105,10 @@ function renderMyCvsList() {
     return;
   }
   listEl.innerHTML = allCvs.map(cv => `
-    <div class="card clickable" style="margin-bottom:8px;" onclick="openCvDetail(${cv.id})">
+    <div class="card clickable ${cv.is_active ? "active-cv" : ""}" style="margin-bottom:8px;" onclick="openCvDetail(${cv.id})">
       <h3>${escapeHtml(cv.label)}</h3>
       <div class="company">${escapeHtml(new Date(cv.created_at).toLocaleDateString())}</div>
+      ${cv.is_active ? `<div class="active-cv-badge">✓ ${escapeHtml(t("my_cvs_active_badge"))}</div>` : ""}
     </div>
   `).join("");
 }

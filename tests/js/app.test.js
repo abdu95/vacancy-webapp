@@ -1035,7 +1035,7 @@ const FAKE_CVS = [
   { id: 1, label: "resume_v1.pdf", is_active: false, extracted_position: null, created_at: "2026-09-01T00:00:00" },
 ];
 
-test("My CVs list shows only filename and date - no position/active/actions until you open one", async () => {
+test("My CVs list marks the active CV (real tester feedback: no way to tell which was active without opening each one) but still hides position/actions until you open one", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({
       "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
@@ -1051,6 +1051,14 @@ test("My CVs list shows only filename and date - no position/active/actions unti
   assert.match(html, /openCvDetail\(1\)/, "each row must be clickable into a detail view");
   assert.ok(!html.includes("Data Analyst"), "the list itself must not show the extracted position");
   assert.ok(!html.includes("activateCv"), "the list itself must not show activate/delete actions");
+
+  const cards = [...document.getElementById("my-cvs-list").children];
+  const activeCard = cards.find(c => c.innerHTML.includes("resume_v2.pdf"));
+  const inactiveCard = cards.find(c => c.innerHTML.includes("resume_v1.pdf"));
+  assert.ok(activeCard.classList.contains("active-cv"), "the active CV's card must be visually marked");
+  assert.ok(!inactiveCard.classList.contains("active-cv"));
+  assert.match(activeCard.innerHTML, /active-cv-badge/);
+  assert.ok(!inactiveCard.innerHTML.includes("active-cv-badge"));
 });
 
 test("opening a CV's detail shows filename, date, extracted position, and 'use this CV' only if inactive", async () => {
@@ -1135,6 +1143,24 @@ test("uploading a new CV from the My CVs screen refreshes the list instead of na
   await window.uploadNewCv();
   await flush();
   assert.equal(document.getElementById("my-cvs-screen").hidden, false, "should stay on My CVs, not navigate to home");
+});
+
+test("choosing a file shows its name - real tester feedback: the native input's own button was unstyled, untranslated, and unclear how it differed from the real upload button", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cvs": () => ({ cvs: FAKE_CVS }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  await window.showMyCvs();
+  assert.equal(document.getElementById("new_cv_file_name").textContent, "No file chosen");
+
+  const file = new window.File(["cv text"], "new_resume.pdf", { type: "application/pdf" });
+  Object.defineProperty(document.getElementById("new_cv_file"), "files", { value: [file] });
+  window.onFileChosen("new_cv_file", "new_cv_file_name");
+  assert.match(document.getElementById("new_cv_file_name").textContent, /new_resume\.pdf/);
 });
 
 // ── Bottom tab bar ────────────────────────────────────────────────────

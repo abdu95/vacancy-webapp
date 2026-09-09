@@ -14,6 +14,16 @@ const I18N = {
   },
   cv_file_label: { en: "CV (PDF or DOCX)", uz: "CV (PDF yoki DOCX)", ru: "Резюме (PDF или DOCX)" },
   upload_cv_btn: { en: "📄 Upload CV", uz: "📄 CV yuklash", ru: "📄 Загрузить резюме" },
+  // Real tester feedback (2026-09-09): the native file input's own button
+  // was unstyled, untranslated (always shows the browser's own language),
+  // and unclear how it differed from the real "Upload CV" button next to
+  // it - one just picks a file locally, the other submits it. This
+  // replaces the native chrome with a styled, translated trigger plus a
+  // visible "selected: <filename>" line, same two-step flow both screens
+  // that upload a CV already have (pick, then a separate submit).
+  choose_file_btn: { en: "📎 Choose file", uz: "📎 Fayl tanlash", ru: "📎 Выбрать файл" },
+  no_file_chosen: { en: "No file chosen", uz: "Fayl tanlanmagan", ru: "Файл не выбран" },
+  file_chosen_label: { en: "Selected: {name}", uz: "Tanlangan: {name}", ru: "Выбрано: {name}" },
   title_screen_hint: {
     en: "What position are you looking for?", uz: "Qanday lavozimni qidiryapsiz?", ru: "Какую должность вы ищете?",
   },
@@ -490,6 +500,8 @@ function applyStaticTranslations() {
   document.getElementById("cv-gate-hint").textContent = t("cv_gate_hint");
   document.getElementById("cv-file-label").textContent = t("cv_file_label");
   document.getElementById("upload_btn").textContent = t("upload_cv_btn");
+  document.getElementById("cv_file_trigger").textContent = t("choose_file_btn");
+  document.getElementById("cv_file_name").textContent = t("no_file_chosen");
   document.getElementById("home-vacancy-label").textContent = t("home_vacancy_label");
   document.getElementById("home-analyze-label").textContent = t("home_analyze_label");
   document.getElementById("home-analyze-option").textContent = t("home_analyze_option");
@@ -522,6 +534,8 @@ function applyStaticTranslations() {
   document.getElementById("btn-my-cvs-back").textContent = t("back_link");
   document.getElementById("my-cvs-upload-label").textContent = t("my_cvs_upload_label");
   document.getElementById("upload_new_cv_btn").textContent = t("upload_cv_btn");
+  document.getElementById("new_cv_file_trigger").textContent = t("choose_file_btn");
+  document.getElementById("new_cv_file_name").textContent = t("no_file_chosen");
   document.getElementById("tab-home-label").textContent = t("tab_home_label");
   document.getElementById("tab-search-label").textContent = t("tab_search_label");
   document.getElementById("tab-analyze-label").textContent = t("tab_analyze_label");

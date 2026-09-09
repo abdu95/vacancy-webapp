@@ -26,7 +26,11 @@
       <button id="btn-cv-gate-back" class="back-btn" onclick="goHome()"></button>
     </div>
     <label for="cv_file" id="cv-file-label"></label>
-    <input type="file" id="cv_file" accept=".pdf,.docx" />
+    <div class="file-picker">
+      <button type="button" class="secondary" id="cv_file_trigger" onclick="document.getElementById('cv_file').click()"></button>
+      <span class="hint" id="cv_file_name"></span>
+    </div>
+    <input type="file" id="cv_file" accept=".pdf,.docx" style="display:none" onchange="onFileChosen('cv_file','cv_file_name')" />
     <button id="upload_btn" onclick="uploadCV()"></button>
     <div id="upload_result"></div>
   </div>
@@ -76,7 +80,11 @@
     <div id="my-cvs-list-section">
       <div id="my-cvs-list"></div>
       <div class="prompt-block" id="my-cvs-upload-label"></div>
-      <input type="file" id="new_cv_file" accept=".pdf,.docx" />
+      <div class="file-picker">
+        <button type="button" class="secondary" id="new_cv_file_trigger" onclick="document.getElementById('new_cv_file').click()"></button>
+        <span class="hint" id="new_cv_file_name"></span>
+      </div>
+      <input type="file" id="new_cv_file" accept=".pdf,.docx" style="display:none" onchange="onFileChosen('new_cv_file','new_cv_file_name')" />
       <button id="upload_new_cv_btn" onclick="uploadNewCv()"></button>
       <div id="my-cvs-upload-result"></div>
     </div>
