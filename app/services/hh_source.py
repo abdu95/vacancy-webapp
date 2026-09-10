@@ -36,14 +36,15 @@ import httpx
 _BASE = "https://widgets.hh.ru/api/v1/hh-api"
 _HEADERS = {"User-Agent": "AcceptedAI/1.0 (abdumalik2014@gmail.com)"}
 
-# area id 97 = Uzbekistan (the whole country) - deliberately the default
-# scope for every search, not just unrecognized locations. This source
-# exists specifically for local/regional coverage; broad
+# area id 97 = Uzbekistan (the whole country) - the default scope only for
+# an unset/"Any" location (no preference stated) or the country's own name.
+# This source exists specifically for local/regional coverage; broad
 # international/remote search is Greenhouse's job. A handful of major
 # cities beyond Tashkent are mapped for when a user is specific about
 # where they want to work - confirmed real ids via hh's own /areas
 # reference, not guessed.
 _UZBEKISTAN_AREA_ID = "97"
+_UZBEKISTAN_NAMES = {"uzbekistan", "o'zbekiston", "ozbekiston", "узбекистан"}
 _CITY_AREA_IDS = {
     "tashkent": "2759", "toshkent": "2759", "ташкент": "2759",
     "samarkand": "2778", "samarqand": "2778", "самарканд": "2778",
@@ -55,10 +56,24 @@ _CITY_AREA_IDS = {
 }
 
 
-def _resolve_area(location: str) -> str:
+def _resolve_area(location: str) -> str | None:
+    """None means "don't search this source at all" - a real bug caught
+    2026-09-09: searching "Project Manager Fashion" with location="Europe"
+    silently substituted a Tashkent result instead of recognizing the
+    request was out of scope. This source only covers Uzbekistan, so an
+    explicit, recognizably-different location (a real place name that
+    isn't Uzbekistan or one of its cities) must make it bow out entirely
+    and let Greenhouse (the actual international/remote source) carry the
+    search alone - not quietly substitute the wrong country's results.
+    Only a genuinely unset preference ("", "Any") defaults to
+    Uzbekistan-wide; an unset preference is not the same as an explicit
+    one this source doesn't recognize."""
     if not location or location.strip().lower() == "any":
         return _UZBEKISTAN_AREA_ID
-    return _CITY_AREA_IDS.get(location.strip().lower(), _UZBEKISTAN_AREA_ID)
+    key = location.strip().lower()
+    if key in _UZBEKISTAN_NAMES:
+        return _UZBEKISTAN_AREA_ID
+    return _CITY_AREA_IDS.get(key)
 
 
 def _strip_html(text: str) -> str:
@@ -111,8 +126,11 @@ async def search_vacancies(job_title: str, location: str, work_setup: str,
     which can surface a posting whose title has nothing to do with the
     query - see _title_overlaps_query's docstring for the real case that
     caught this."""
+    area = _resolve_area(location)
+    if area is None:
+        return []
     seen = {c.lower() for c in (seen_companies or [])}
-    params = {"text": job_title, "area": _resolve_area(location), "per_page": 20}
+    params = {"text": job_title, "area": area, "per_page": 20}
 
     try:
         items = await _fetch_items(params)

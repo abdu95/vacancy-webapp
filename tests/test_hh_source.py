@@ -63,15 +63,40 @@ async def capture_params(params):
 
 
 with mock.patch.object(hh_source, "_fetch_items", new=capture_params):
+    captured_params.clear()
     asyncio.run(hh_source.search_vacancies("Data Analyst", "Tashkent", "Any", "Any"))
     assert captured_params["area"] == "2759", "Tashkent must resolve to its real hh area id"
 
+    captured_params.clear()
     asyncio.run(hh_source.search_vacancies("Data Analyst", "Any", "Any", "Any"))
     assert captured_params["area"] == "97", "an unset/'Any' location must default to Uzbekistan-wide, not unscoped"
 
-    asyncio.run(hh_source.search_vacancies("Data Analyst", "Some Unmapped Village", "Any", "Any"))
-    assert captured_params["area"] == "97", "an unrecognized location must fall back to Uzbekistan-wide, not error"
-print("PASS: location resolves to the correct hh area id, with a sane fallback for unrecognized/blank locations")
+    captured_params.clear()
+    asyncio.run(hh_source.search_vacancies("Data Analyst", "Uzbekistan", "Any", "Any"))
+    assert captured_params["area"] == "97", "the country's own name must also resolve to Uzbekistan-wide"
+print("PASS: location resolves to the correct hh area id for a recognized Uzbekistan location")
+
+# --- Test 3b: real bug (2026-09-10) - searching "Project Manager Fashion"
+# with location="Europe" silently returned a Tashkent result instead of
+# recognizing the search was out of scope for this source. An explicit
+# location this source doesn't cover must skip the fetch entirely (empty
+# result, no network call), not substitute the wrong country's data. ---
+fetch_called = False
+
+
+async def fail_if_called(params):
+    global fetch_called
+    fetch_called = True
+    return []
+
+
+with mock.patch.object(hh_source, "_fetch_items", new=fail_if_called):
+    for unmapped_location in ("Europe", "Germany", "Remote", "Some Unmapped Village"):
+        fetch_called = False
+        results = asyncio.run(hh_source.search_vacancies("Project Manager Fashion", unmapped_location, "Any", "Any"))
+        assert results == [], f"'{unmapped_location}' must return no results, not substitute Uzbekistan data"
+        assert not fetch_called, f"'{unmapped_location}' must not even call hh's API - it's out of scope for this source"
+print("PASS: an explicit non-Uzbekistan location is skipped entirely, not silently substituted with Uzbekistan results")
 
 # --- Test 4: never breaks the overall search - a network failure or non-200 returns [] ---
 with mock.patch.object(hh_source, "_fetch_items", new=mock.AsyncMock(side_effect=Exception("network down"))):
