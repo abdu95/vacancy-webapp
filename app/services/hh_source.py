@@ -70,10 +70,29 @@ def _resolve_area(location: str) -> str | None:
     one this source doesn't recognize."""
     if not location or location.strip().lower() == "any":
         return _UZBEKISTAN_AREA_ID
-    key = location.strip().lower()
-    if key in _UZBEKISTAN_NAMES:
-        return _UZBEKISTAN_AREA_ID
-    return _CITY_AREA_IDS.get(key)
+    text = location.strip().lower()
+
+    # Plain substring, not exact equality or word-boundary matching - a
+    # real user rarely types the bare city name alone ("Toshkent shahri",
+    # "Tashkent city", "Tashkent, Uzbekistan" all need to still resolve).
+    # Deliberately not \b-bounded like _title_overlaps_query: Uzbek is
+    # agglutinative, so a city name commonly carries a case suffix glued
+    # directly on with no word break ("Toshkentda" = "in Tashkent",
+    # "Toshkentga" = "to Tashkent") - a word-boundary check would miss
+    # exactly the phrasing a real Uzbek-typing user is likely to use.
+    # City-name collisions with an unrelated place are unlikely enough in
+    # a location field specifically that the tradeoff favors recall here.
+    # City check runs first, deliberately more specific than the country
+    # check: "Tashkent, Uzbekistan" contains both "tashkent" and
+    # "uzbekistan" - the user named a specific city, so that should win
+    # over the broader country-wide scope, not the other way around.
+    for name, area_id in _CITY_AREA_IDS.items():
+        if name in text:
+            return area_id
+    for name in _UZBEKISTAN_NAMES:
+        if name in text:
+            return _UZBEKISTAN_AREA_ID
+    return None
 
 
 def _strip_html(text: str) -> str:

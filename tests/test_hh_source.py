@@ -76,6 +76,25 @@ with mock.patch.object(hh_source, "_fetch_items", new=capture_params):
     assert captured_params["area"] == "97", "the country's own name must also resolve to Uzbekistan-wide"
 print("PASS: location resolves to the correct hh area id for a recognized Uzbekistan location")
 
+# --- Test 3a: city recognition survives real phrasing variation, not just
+# the bare city name - real question raised 2026-09-10: "how do we ensure
+# a Tashkent search shows Tashkent results, no matter the language?" ---
+with mock.patch.object(hh_source, "_fetch_items", new=capture_params):
+    for phrasing in (
+        "Tashkent",           # en, bare
+        "toshkent",           # uz, lowercase
+        "Ташкент",            # ru
+        "Toshkent shahri",    # uz, "city of Tashkent"
+        "Tashkent, Uzbekistan",
+        "  Tashkent  ",       # stray whitespace
+        "Toshkentda",         # uz locative case ("in Tashkent") - suffix glued directly on, no word break
+        "Toshkentga",         # uz dative case ("to Tashkent")
+    ):
+        captured_params.clear()
+        asyncio.run(hh_source.search_vacancies("Data Analyst", phrasing, "Any", "Any"))
+        assert captured_params["area"] == "2759", f"'{phrasing}' must still resolve to Tashkent, got {captured_params}"
+print("PASS: Tashkent is recognized across real phrasing/language variation, including Uzbek case suffixes")
+
 # --- Test 3b: real bug (2026-09-10) - searching "Project Manager Fashion"
 # with location="Europe" silently returned a Tashkent result instead of
 # recognizing the search was out of scope for this source. An explicit
