@@ -103,10 +103,14 @@ const I18N = {
     uz: "Ushbu lavozim uchun 3 ta bepul qidiruvingizdan foydalandingiz.",
     ru: "Вы использовали 3 бесплатных поиска для этой должности.",
   },
+  // Dropped the "usually takes 15-30 seconds" line (2026-09-10, real
+  // feedback: search is no longer that slow - hh.uz + Greenhouse run
+  // concurrently now, not a slow serial/web-search flow) - stale timing
+  // claims are worse than no claim at all.
   searching_message: {
-    en: "🔎 Searching for {title} in {location}… usually takes 15–30 seconds.",
-    uz: "🔎 {title} bo'yicha {location} joyida qidirilmoqda… odatda 15–30 soniya vaqt oladi.",
-    ru: "🔎 Ищу «{title}» в {location}… обычно занимает 15–30 секунд.",
+    en: "🔎 Searching for {title} in {location}…",
+    uz: "🔎 {title} bo'yicha {location} joyida qidirilmoqda…",
+    ru: "🔎 Ищу «{title}» в {location}…",
   },
   search_failed: {
     en: "Search failed on our end. Please try again in a moment.",

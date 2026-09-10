@@ -49,6 +49,7 @@ function pickTitle(title) {
   state.vacancies = [];
   state.vacancyIndex = -1;
   state.improveCount = 0;
+  state.lastSearchLocation = null;
   // The free-search cap is per title, not a hard daily wall: picking a
   // (new or different) title always starts with a fresh MAX_SEARCHES -
   // trying another title is the escape valve, not "come back tomorrow".
@@ -71,6 +72,24 @@ async function search() {
     resultEl.innerHTML = `<div class="error">${escapeHtml(t("open_from_bot"))}</div>`;
     return;
   }
+
+  // Real bug (2026-09-10): changing location and searching again never
+  // cleared the previous location's accumulated results. A location that
+  // genuinely has nothing (0 new matches) fell through to the "no NEW
+  // matches, here's what you already had" branch below and kept showing
+  // the OLD location's card with no indication the new search found
+  // nothing - e.g. switching from "Tashkent" (had a result) to "Europe"
+  // (has none) silently kept showing the Tashkent card. A changed
+  // location is a fresh search intent, same as picking a new title
+  // already resets everything for (see pickTitle).
+  if (location !== state.lastSearchLocation) {
+    state.vacancies = [];
+    state.seenCompanies = [];
+    state.vacancyIndex = -1;
+    state.searchCount = 0;
+    state.lastSearchLocation = location;
+  }
+
   if (state.searchCount >= MAX_SEARCHES) {
     resultEl.innerHTML = `<div class="hint">${escapeHtml(t("search_limit_session"))}</div>${searchCapCta()}`;
     return;

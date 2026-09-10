@@ -522,6 +522,33 @@ test("the 3-search cap is per job title: picking a different title gives a fresh
   assert.equal(searchCalls, 4, "a new title should get a fresh 3 searches");
 });
 
+test("changing location and searching again clears the previous location's stale result - real bug: Tashkent result kept showing after switching to Europe", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": (body) => {
+        if (body.location === "Tashkent") {
+          return { vacancies: [{ title: "PM (Fashion)", company: "Bloomshop", location: "Tashkent", url: "https://x", summary: "..." }] };
+        }
+        return { vacancies: [] }; // Europe: hh.uz is out of scope, Greenhouse has nothing either
+      },
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.pickTitle("Project Manager Fashion");
+
+  document.getElementById("location").value = "Tashkent";
+  await window.search();
+  assert.match(document.getElementById("result").innerHTML, /Bloomshop/, "the Tashkent search should show its real result");
+
+  document.getElementById("location").value = "Europe";
+  await window.search();
+  const html = document.getElementById("result").innerHTML;
+  assert.ok(!html.includes("Bloomshop"), "the stale Tashkent card must not still be showing after searching Europe");
+  assert.match(html, new RegExp(window.t("no_match_found")), "an empty result for the NEW location must show the honest no-match message");
+});
+
 test("liking a vacancy hides the like/search-again/carousel/analyze-CV decision block, leaving only the current step's buttons", async () => {
   const dom = loadApp({
     fetchImpl: defaultFetchMock({

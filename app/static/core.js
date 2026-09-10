@@ -21,7 +21,7 @@ if (tg) {
 }
 
 const state = {
-  jobTitle: "", seenCompanies: [], searchCount: 0,
+  jobTitle: "", seenCompanies: [], searchCount: 0, lastSearchLocation: null,
   vacancies: [], vacancyIndex: -1, improveCount: 0,
   jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
