@@ -16,6 +16,10 @@ async function analyzeCV() {
   btn.disabled = true;
   const analyzingKey = looksLikeUrl(jd) ? "analyzing_link_message_web" : "analyzing_message_web";
   resultEl.innerHTML = bigLoader(KEY_ICON[analyzingKey], t(analyzingKey));
+  // Scroll as soon as the loader appears, not just once the result comes
+  // back - real feedback that a loader placed below the fold with no
+  // scroll went unnoticed the whole time it was waiting.
+  scrollToBottom();
 
   try {
     const data = await callApi("/api/cv-jd-analysis", { jd });
@@ -174,6 +178,7 @@ async function loadRoadmapItem(item) {
 
   const areaEl = document.getElementById("roadmap-area");
   areaEl.innerHTML = bigLoader("sparkles", t("analyzing_message_web"));
+  scrollToBottom();
   try {
     // Reuse an in-flight prefetch for this exact item if one exists,
     // instead of firing a second (real, paid) API call for the same item.

@@ -268,6 +268,7 @@ test("a vacancy card offers Open link / Copy URL / Match my CV immediately, befo
   const cardHtml = document.getElementById("result").innerHTML;
   assert.match(cardHtml, /href="https:\/\/boards\.greenhouse\.io\/acme\/jobs\/1"/, "Open link must point at the real posting URL");
   assert.match(cardHtml, /<b>Acme<\/b>/, "company name must be bold - real feedback that it wasn't visible enough");
+  assert.match(cardHtml, /<p class="clamp-5">/, "a long description must be clamped, not push the action buttons off-screen");
   // Short, one-line labels on purpose (real feedback: two-line button text
   // didn't match the single-line height of the buttons below it). Icons
   // (not emoji) lead each label - see icons.js.
@@ -333,7 +334,13 @@ test("Match my CV on the card runs a fit check directly, without requiring 'like
   await window.search();
 
   assert.equal(document.getElementById("vacancy-decision").hidden, false, "sanity check: 'like it' was never clicked");
-  await window.checkFit();
+
+  let scrolled = false;
+  window.scrollToBottom = () => { scrolled = true; };
+  const pending = window.checkFit();
+  assert.equal(document.getElementById("vacancy-decision").hidden, true, "the Prev/Next/Like/Search-again row must be hidden as soon as fit-checking starts, not still showing above the loader");
+  assert.equal(scrolled, true, "must scroll to the loader immediately - this is the exact screenshot real feedback showed: the loader sat off-screen below a wall of still-visible buttons");
+  await pending;
   assert.match(document.getElementById("action-area").innerHTML, /Good fit\./, "checkFit should work immediately from the card, not only after liking the vacancy");
 });
 
@@ -713,10 +720,14 @@ test("searching for vacancies shows a large, unmissable loading state, not the o
   const { document, window } = dom.window;
   window.pickTitle("Data Analyst");
 
+  let scrolled = false;
+  window.scrollToBottom = () => { scrolled = true; };
+
   const pending = window.search(); // check the loading state before it resolves
   const loadingHtml = document.getElementById("result").innerHTML;
   assert.match(loadingHtml, /big-loader/, "must use the large loading state (see .big-loader in style.css), not the old small inline hint");
   assert.match(loadingHtml, /spinner/);
+  assert.equal(scrolled, true, "must scroll to the loader immediately, not only once the result comes back - real feedback that the loader went unnoticed off-screen the whole time it was waiting");
   await pending;
 });
 

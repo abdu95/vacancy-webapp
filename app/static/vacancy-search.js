@@ -21,6 +21,7 @@ async function suggestTitles() {
   box.hidden = false;
   errEl.innerHTML = "";
   chipsEl.innerHTML = bigLoader("sparkles", t("analyzing_cv"));
+  scrollToBottom();
 
   try {
     const data = await callApi("/api/suggest-titles", {});
@@ -124,6 +125,7 @@ async function search() {
 
   btn.disabled = true;
   resultEl.innerHTML = bigLoader(null, t("searching_message", { title: state.jobTitle, location: location }));
+  scrollToBottom();
 
   try {
     const data = await callApi("/api/search", {
@@ -217,7 +219,7 @@ function renderVacancyCard() {
     <div class="card">
       <h3>${escapeHtml(v.title)}</h3>
       <div class="company"><b>${escapeHtml(v.company)}</b> · ${escapeHtml(v.location)}</div>
-      <p>${escapeHtml(v.summary)}</p>
+      <p class="clamp-5">${escapeHtml(v.summary)}</p>
       <div class="row">
         <a class="btn-link icon-row" href="${escapeHtml(v.url)}" target="_blank">${iconRow("link", escapeHtml(t("open_link_btn")))}</a>
         <button class="secondary icon-row" onclick="copyVacancyUrl()">${iconRow("copy", escapeHtml(t("copy_url_btn")))}</button>
@@ -319,7 +321,14 @@ async function checkFit() {
     showScreen("cv-gate");
     return;
   }
+  // Once committed to evaluating fit, the browse/like/search-again
+  // decision no longer applies - same reasoning as likeVacancy() hiding
+  // it, but this path (Match my CV straight from the card) was missing
+  // it, which is exactly why real feedback saw a pile-up of unrelated
+  // buttons (Prev/Next/Like/Search again) still sitting above the score.
+  document.getElementById("vacancy-decision").hidden = true;
   actionArea().innerHTML = bigLoader(null, t("checking_fit"));
+  scrollToBottom();
   try {
     const score = await callApi("/api/score-vacancy", { vacancy: currentVacancy() });
     state.lastScore = score;
@@ -366,6 +375,7 @@ function showLevelPicker() {
 
 async function getRecommendations(level) {
   actionArea().innerHTML = bigLoader("edit-3", t("working_out_fixes"));
+  scrollToBottom();
   try {
     const data = await callApi("/api/cv-recommendations", { vacancy: currentVacancy(), level });
     renderRecommendations(data.fixes);
@@ -424,6 +434,7 @@ async function uploadImprovedCV() {
   }
 
   resultEl.innerHTML = bigLoader("file-text", t("reading_updated_cv"));
+  scrollToBottom();
   const formData = new FormData();
   formData.append("init_data", tg.initData);
   formData.append("file", file);

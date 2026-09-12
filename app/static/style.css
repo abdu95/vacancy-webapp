@@ -215,6 +215,15 @@ button.nav-chip {
 .card.clickable { cursor: pointer; }
 .card h3 { margin: 0 0 4px; font-size: 16px; }
 .card .company { color: var(--tg-theme-hint-color, #999999); font-size: 13px; margin-bottom: 8px; }
+/* Caps a vacancy card's summary at 5 lines - real feedback that a long
+   posting pushed the actual action buttons too far down the screen. The
+   full text is still one tap away via "Open"/"Copy". */
+.clamp-5 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
+}
 .card a { color: var(--tg-theme-link-color, #2481cc); }
 .file-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .file-picker .hint { margin-bottom: 0; }
