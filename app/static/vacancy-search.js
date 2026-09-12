@@ -123,7 +123,7 @@ async function search() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = bigLoader("search", t("searching_message", { title: state.jobTitle, location: location }));
+  resultEl.innerHTML = bigLoader(null, t("searching_message", { title: state.jobTitle, location: location }));
 
   try {
     const data = await callApi("/api/search", {
@@ -319,7 +319,7 @@ async function checkFit() {
     showScreen("cv-gate");
     return;
   }
-  actionArea().innerHTML = bigLoader("bar-chart", t("checking_fit"));
+  actionArea().innerHTML = bigLoader(null, t("checking_fit"));
   try {
     const score = await callApi("/api/score-vacancy", { vacancy: currentVacancy() });
     state.lastScore = score;

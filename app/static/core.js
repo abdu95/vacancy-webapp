@@ -247,12 +247,16 @@ function escapeHtml(text) {
 // A large, centered spinner + message for steps that call out to the AI
 // or a live search and take a few seconds (analysis, vacancy search,
 // reading a CV, ...) - see .big-loader in style.css for why this exists
-// instead of the small inline .hint text these replaced.
+// instead of the small inline .hint text these replaced. `iconName` is
+// optional - real feedback that a leading icon next to an already-spinning
+// spinner (e.g. a search icon on "Searching...") read as confusing/
+// redundant, not clarifying; pass null/omit to show just the message.
 function bigLoader(iconName, text) {
+  const label = iconName ? iconRow(iconName, escapeHtml(text)) : escapeHtml(text);
   return `
     <div class="big-loader">
       <div class="spinner"></div>
-      <div class="big-loader-text icon-row">${iconRow(iconName, escapeHtml(text))}</div>
+      <div class="big-loader-text${iconName ? " icon-row" : ""}">${label}</div>
     </div>
   `;
 }
