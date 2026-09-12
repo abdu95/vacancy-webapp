@@ -21,8 +21,8 @@ async function showChecksScreen() {
       await renderBuyChecks(buyBox);
     } else {
       const btn = document.createElement("button");
-      btn.className = "secondary";
-      btn.textContent = t("profile_buy_more_btn");
+      btn.className = "secondary icon-row";
+      btn.innerHTML = iconRow("credit-card", escapeHtml(t("profile_buy_more_btn")));
       btn.onclick = async () => {
         const buyBox = document.createElement("div");
         contentEl.appendChild(buyBox);
@@ -32,7 +32,7 @@ async function showChecksScreen() {
     }
   } catch (err) {
     console.error("Couldn't load checks status:", err);
-    contentEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("couldnt_load_profile")))}</div>`;
+    contentEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("couldnt_load_profile"))))}</div>`;
   }
 }
 
@@ -53,7 +53,7 @@ async function showMyChecks() {
     renderMyChecksList();
   } catch (err) {
     console.error("Loading checks failed:", err);
-    listEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("my_checks_load_failed")))}</div>`;
+    listEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("my_checks_load_failed"))))}</div>`;
   }
 }
 
@@ -68,7 +68,7 @@ function renderMyChecksList() {
     const emptyMsg = checksUsedBeforeHistory > 0 ? "my_checks_empty_predates_history" : "my_checks_empty";
     listEl.innerHTML = `
       <div class="prompt-block">${escapeHtml(t(emptyMsg))}</div>
-      <button onclick="goToAnalysis()">${escapeHtml(t("home_analyze_option"))}</button>
+      <button class="icon-row" onclick="goToAnalysis()">${iconRow("bar-chart", escapeHtml(t("home_analyze_option")))}</button>
     `;
     return;
   }
@@ -92,7 +92,7 @@ async function openCheckDetail(analysisId) {
     console.error("Loading check detail failed:", err);
     detailEl.innerHTML = `
       <button class="back-btn" onclick="closeCheckDetail()">${escapeHtml(t("back_link"))}</button>
-      <div class="error" style="margin-top:12px;">⚠️ ${escapeHtml(friendlyError(err, t("my_checks_load_failed")))}</div>
+      <div class="error icon-row-top" style="margin-top:12px;">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("my_checks_load_failed"))))}</div>
     `;
   }
 }
@@ -116,7 +116,7 @@ function renderCheckDetail(check) {
     </div>
     ${analysisBlocksHtml(check.ats, check.xyz, check.tools, check.level)}
     ${roadmapHtml}
-    <button class="danger" style="margin-top:16px;" onclick="confirmDeleteCheck(${check.id})">${escapeHtml(t("delete_application_btn"))}</button>
+    <button class="danger icon-row" style="margin-top:16px;" onclick="confirmDeleteCheck(${check.id})">${iconRow("trash-2", escapeHtml(t("delete_application_btn")))}</button>
     <div id="check-detail-action-result"></div>
   `;
   scrollToBottom();
@@ -146,7 +146,7 @@ async function deleteCheckNow(analysisId) {
     await showMyChecks();
   } catch (err) {
     console.error("Delete check failed:", err);
-    el.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("delete_failed")))}</div>`;
+    el.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("delete_failed"))))}</div>`;
   }
 }
 // Russian needs 3 plural forms (1 проверка / 2 проверки / 5 проверок),
@@ -206,7 +206,7 @@ async function renderBuyChecks(containerEl) {
   box.innerHTML = `
     <div class="prompt-block">${escapeHtml(t("buy_checks_intro", { price: (_buyChecksPriceTiyin / 100).toLocaleString() }))}</div>
     ${CHECK_QUANTITY_PRESETS.map(n => `<button onclick="buyChecks(${n})">${escapeHtml(checksLabel(n))} — ${amountFor(n)} UZS</button>`).join("")}
-    <button class="secondary" onclick="showCustomChecksInput()">${escapeHtml(t("buy_custom_btn"))}</button>
+    <button class="secondary icon-row" onclick="showCustomChecksInput()">${iconRow("hash", escapeHtml(t("buy_custom_btn")))}</button>
     <div id="buy-checks-extra"></div>
   `;
   scrollToBottom();
@@ -282,7 +282,7 @@ async function buyChecks(checks) {
     scrollToBottom();
   } catch (err) {
     console.error("Checkout failed:", err);
-    box.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("checkout_failed")))}</div>`;
+    box.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("checkout_failed"))))}</div>`;
   }
 }
 
@@ -295,12 +295,12 @@ async function checkPaymentStatus(remainingBefore) {
     updateChecksHeader(q.remaining);
     if (q.remaining > remainingBefore) {
       _pendingCheckoutRemaining = null;
-      resultEl.innerHTML = `<div class="prompt-block">${escapeHtml(t("checkout_confirmed", { remaining: q.remaining }))}</div>`;
+      resultEl.innerHTML = `<div class="prompt-block icon-row">${iconRow("check-circle", escapeHtml(t("checkout_confirmed", { remaining: q.remaining })))}</div>`;
     } else {
       resultEl.innerHTML = `<div class="hint">${escapeHtml(t("checkout_still_pending"))}</div>`;
     }
   } catch (err) {
     console.error("Checking payment status failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("checkout_status_check_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("checkout_status_check_failed"))))}</div>`;
   }
 }

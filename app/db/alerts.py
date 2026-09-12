@@ -71,16 +71,63 @@ def filter_new_vacancy_urls(telegram_id: int, urls: list[str]) -> list[str]:
         pool.putconn(conn)
 
 
-def mark_vacancies_alerted(telegram_id: int, urls: list[str]) -> None:
-    if not urls:
+def mark_vacancies_alerted(
+    telegram_id: int, vacancies: list[dict], batch_id: str, job_title: str, location: str | None,
+) -> None:
+    """Records one digest's vacancies both for future dedup (vacancy_url,
+    as before) and so the Mini App can later show this exact batch (see
+    get_alert_batch) when the user taps the alert message's button."""
+    if not vacancies:
         return
     pool = db.get_pool()
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
             cur.executemany(
-                "INSERT INTO alerted_vacancies (telegram_id, vacancy_url) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-                [(telegram_id, u) for u in urls],
+                """
+                INSERT INTO alerted_vacancies
+                    (telegram_id, vacancy_url, batch_id, vacancy_title, vacancy_company,
+                     vacancy_location, vacancy_summary, searched_job_title, searched_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (telegram_id, vacancy_url) DO NOTHING
+                """,
+                [
+                    (telegram_id, v["url"], batch_id, v.get("title"), v.get("company"),
+                     v.get("location"), v.get("summary"), job_title, location)
+                    for v in vacancies if v.get("url")
+                ],
             )
+    finally:
+        pool.putconn(conn)
+
+
+def get_alert_batch(telegram_id: int, batch_id: str) -> dict | None:
+    """The vacancies from one alert digest, for the Mini App screen a
+    tapped alert message's button opens into. Scoped to telegram_id (the
+    authenticated caller, not a client-supplied value) so one user's
+    batch_id can't be used to read another's. None if the batch doesn't
+    exist (bad/old link) or belongs to someone else."""
+    pool = db.get_pool()
+    conn = pool.getconn()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT vacancy_title, vacancy_company, vacancy_location, vacancy_summary, vacancy_url,
+                       searched_job_title, searched_location
+                FROM alerted_vacancies
+                WHERE telegram_id = %s AND batch_id = %s
+                ORDER BY id
+                """,
+                (telegram_id, batch_id),
+            )
+            rows = cur.fetchall()
+        if not rows:
+            return None
+        vacancies = [
+            {"title": r[0], "company": r[1], "location": r[2], "summary": r[3], "url": r[4]}
+            for r in rows
+        ]
+        return {"vacancies": vacancies, "job_title": rows[0][5], "location": rows[0][6]}
     finally:
         pool.putconn(conn)

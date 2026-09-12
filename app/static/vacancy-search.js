@@ -20,7 +20,7 @@ async function suggestTitles() {
   const errEl = document.getElementById("title-error");
   box.hidden = false;
   errEl.innerHTML = "";
-  chipsEl.innerHTML = `<div class="hint">${escapeHtml(t("analyzing_cv"))}</div>`;
+  chipsEl.innerHTML = `<div class="hint icon-row">${iconRow("sparkles", escapeHtml(t("analyzing_cv")))}</div>`;
 
   try {
     const data = await callApi("/api/suggest-titles", {});
@@ -35,7 +35,7 @@ async function suggestTitles() {
   } catch (err) {
     console.error("Suggest titles failed:", err);
     chipsEl.innerHTML = "";
-    errEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("suggestions_failed")))}</div>`;
+    errEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("suggestions_failed"))))}</div>`;
   }
 }
 
@@ -61,6 +61,33 @@ function pickTitle(title) {
 
 function backToTitleScreen() {
   showScreen("title-screen");
+}
+
+// Opened from a tapped vacancy-alert message's button (see core.js's
+// checkCVAndRoute, which calls this for a ?alert_batch=<id> URL) - shows
+// the exact vacancies that digest sent, same carousel as a live search,
+// so the button leads somewhere specific instead of a bare home screen.
+// Silently leaves the user on whatever screen checkCVAndRoute already
+// picked if the batch is gone (old link, already expired) or the fetch
+// fails - this is a bonus landing, not a blocking step.
+async function openAlertBatch(batchId) {
+  try {
+    const data = await callApi("/api/alert-batch", { batch_id: batchId });
+    if (!data.vacancies || data.vacancies.length === 0) return;
+    state.jobTitle = data.job_title || "";
+    state.seenCompanies = data.vacancies.map(v => v.company);
+    state.vacancies = data.vacancies;
+    state.vacancyIndex = 0;
+    state.improveCount = 0;
+    state.searchCount = 0;
+    state.lastSearchLocation = data.location || null;
+    document.getElementById("chosen-title-label").textContent = state.jobTitle;
+    document.getElementById("location").value = (data.location && data.location !== "Any") ? data.location : "";
+    showScreen("search-screen");
+    renderVacancyCard();
+  } catch (err) {
+    console.error("Couldn't load alert batch, staying on the default screen:", err);
+  }
 }
 // ── Search / vacancy carousel ────────────────────────────────────────
 async function search() {
@@ -96,7 +123,7 @@ async function search() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = `<div class="hint">${escapeHtml(t("searching_message", { title: state.jobTitle, location: location }))}</div>`;
+  resultEl.innerHTML = `<div class="hint icon-row">${iconRow("search", escapeHtml(t("searching_message", { title: state.jobTitle, location: location })))}</div>`;
 
   try {
     const data = await callApi("/api/search", {
@@ -124,7 +151,7 @@ async function search() {
     renderVacancyCard();
   } catch (err) {
     console.error("Search error:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("search_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("search_failed"))))}</div>`;
   } finally {
     btn.disabled = false;
   }
@@ -187,10 +214,10 @@ function renderVacancyCard() {
       <div class="company">${escapeHtml(v.company)} · ${escapeHtml(v.location)}</div>
       <p>${escapeHtml(v.summary)}</p>
       <div class="row">
-        <a class="btn-link" href="${escapeHtml(v.url)}" target="_blank">${escapeHtml(t("open_link_btn"))}</a>
-        <button class="secondary" onclick="copyVacancyUrl()">${escapeHtml(t("copy_url_btn"))}</button>
+        <a class="btn-link icon-row" href="${escapeHtml(v.url)}" target="_blank">${iconRow("link", escapeHtml(t("open_link_btn")))}</a>
+        <button class="secondary icon-row" onclick="copyVacancyUrl()">${iconRow("copy", escapeHtml(t("copy_url_btn")))}</button>
       </div>
-      <button onclick="checkFit()">${escapeHtml(t("match_my_cv_btn"))}</button>
+      <button class="icon-row" onclick="checkFit()">${iconRow("target", escapeHtml(t("match_my_cv_btn")))}</button>
       <div id="copy-url-result"></div>
     </div>
     <div id="vacancy-decision">
@@ -203,8 +230,8 @@ function renderVacancyCard() {
       ` : ''}
       <div class="prompt-block">${escapeHtml(t("like_this_one"))}</div>
       <div class="row">
-        <button onclick="likeVacancy()">${escapeHtml(t("yes_like_it"))}</button>
-        ${canSearchAgain ? `<button class="secondary" onclick="search()">${escapeHtml(t("search_again_btn"))}</button>` : ''}
+        <button class="icon-row" onclick="likeVacancy()">${iconRow("thumbs-up", escapeHtml(t("yes_like_it")))}</button>
+        ${canSearchAgain ? `<button class="secondary icon-row" onclick="search()">${iconRow("refresh-cw", escapeHtml(t("search_again_btn")))}</button>` : ''}
       </div>
       ${!canSearchAgain ? `<div class="hint" style="margin-top:8px;">${escapeHtml(t("search_limit_title"))}</div>${searchCapCta()}` : ''}
     </div>
@@ -216,9 +243,9 @@ function renderVacancyCard() {
 function searchCapCta() {
   return `
     <div class="prompt-block">${escapeHtml(t("search_cap_prompt"))}</div>
-    <button onclick="backToTitleScreen()">${escapeHtml(t("search_cap_new_title_btn"))}</button>
-    <button class="secondary" onclick="showVacancyAlerts()">${escapeHtml(t("search_cap_alerts_btn"))}</button>
-    <button class="secondary" onclick="goToAnalysis()">${escapeHtml(t("search_cap_analyze_btn"))}</button>
+    <button class="icon-row" onclick="backToTitleScreen()">${iconRow("search", escapeHtml(t("search_cap_new_title_btn")))}</button>
+    <button class="secondary icon-row" onclick="showVacancyAlerts()">${iconRow("bell", escapeHtml(t("search_cap_alerts_btn")))}</button>
+    <button class="secondary icon-row" onclick="goToAnalysis()">${iconRow("bar-chart", escapeHtml(t("search_cap_analyze_btn")))}</button>
   `;
 }
 
@@ -236,8 +263,8 @@ function likeVacancy() {
   actionArea().innerHTML = `
     <div class="prompt-block">${escapeHtml(t("how_proceed"))}</div>
     <div class="row">
-      <button onclick="applyDirectly()">${escapeHtml(t("apply_directly"))}</button>
-      <button class="secondary" onclick="checkFit()">${escapeHtml(t("check_cv_fit"))}</button>
+      <button class="icon-row" onclick="applyDirectly()">${iconRow("check-circle", escapeHtml(t("apply_directly")))}</button>
+      <button class="secondary icon-row" onclick="checkFit()">${iconRow("bar-chart", escapeHtml(t("check_cv_fit")))}</button>
     </div>
   `;
   scrollToBottom();
@@ -250,7 +277,7 @@ async function applyDirectly() {
   } catch (err) {
     console.error("Apply failed:", err);
     actionArea().innerHTML = `
-      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("apply_failed")))}</div>
+      <div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("apply_failed"))))}</div>
       <button onclick="applyDirectly()">${escapeHtml(t("retry_btn"))}</button>
     `;
   }
@@ -266,7 +293,7 @@ async function checkFit() {
     showScreen("cv-gate");
     return;
   }
-  actionArea().innerHTML = `<div class="hint">${escapeHtml(t("checking_fit"))}</div>`;
+  actionArea().innerHTML = `<div class="hint icon-row">${iconRow("bar-chart", escapeHtml(t("checking_fit")))}</div>`;
   try {
     const score = await callApi("/api/score-vacancy", { vacancy: currentVacancy() });
     state.lastScore = score;
@@ -274,7 +301,7 @@ async function checkFit() {
   } catch (err) {
     console.error("Scoring failed:", err);
     actionArea().innerHTML = `
-      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("scoring_failed")))}</div>
+      <div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("scoring_failed"))))}</div>
       <button onclick="checkFit()">${escapeHtml(t("retry_btn"))}</button>
     `;
   }
@@ -288,12 +315,12 @@ function renderScoreResult(score) {
     <div class="card" style="margin-top:16px;">
       <h3>${escapeHtml(t("match_heading", { score: score.score }))}</h3>
       <p>${escapeHtml(score.verdict || "")}</p>
-      <div>✅ <b>${escapeHtml(t("matched_label"))}</b> ${escapeHtml(matched)}</div>
-      <div>❌ <b>${escapeHtml(t("missing_label"))}</b> ${escapeHtml(missing)}</div>
+      <div class="icon-row-top">${iconRow("check-circle", `<b>${escapeHtml(t("matched_label"))}</b> ${escapeHtml(matched)}`)}</div>
+      <div class="icon-row-top">${iconRow("x-circle", `<b>${escapeHtml(t("missing_label"))}</b> ${escapeHtml(missing)}`)}</div>
     </div>
     <div class="row">
-      <button onclick="applyDirectly()">${escapeHtml(t("apply_anyway"))}</button>
-      ${state.improveCount < MAX_IMPROVES ? `<button class="secondary" onclick="showLevelPicker()">${escapeHtml(t("get_recommendations"))}</button>` : ''}
+      <button class="icon-row" onclick="applyDirectly()">${iconRow("check-circle", escapeHtml(t("apply_anyway")))}</button>
+      ${state.improveCount < MAX_IMPROVES ? `<button class="secondary icon-row" onclick="showLevelPicker()">${iconRow("edit-3", escapeHtml(t("get_recommendations")))}</button>` : ''}
     </div>
   `;
   scrollToBottom();
@@ -312,7 +339,7 @@ function showLevelPicker() {
 }
 
 async function getRecommendations(level) {
-  actionArea().innerHTML = `<div class="hint">${escapeHtml(t("working_out_fixes"))}</div>`;
+  actionArea().innerHTML = `<div class="hint icon-row">${iconRow("edit-3", escapeHtml(t("working_out_fixes")))}</div>`;
   try {
     const data = await callApi("/api/cv-recommendations", { vacancy: currentVacancy(), level });
     renderRecommendations(data.fixes);
@@ -324,7 +351,7 @@ async function getRecommendations(level) {
     // retry here, recovering meant leaving this vacancy and re-running
     // "Match my CV" from scratch just to get back to a level picker.
     actionArea().innerHTML = `
-      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("recommendations_failed")))}</div>
+      <div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("recommendations_failed"))))}</div>
       <button onclick="getRecommendations('${level}')">${escapeHtml(t("retry_btn"))}</button>
     `;
   }
@@ -344,8 +371,8 @@ function renderRecommendations(fixes) {
     ${cards}
     <div class="prompt-block">${escapeHtml(t("ready_to_apply"))}</div>
     <div class="row">
-      <button onclick="applyDirectly()">${escapeHtml(t("apply_now"))}</button>
-      ${state.improveCount < MAX_IMPROVES ? `<button class="secondary" onclick="showImproveUpload()">${escapeHtml(t("improve_cv_btn"))}</button>` : ''}
+      <button class="icon-row" onclick="applyDirectly()">${iconRow("check-circle", escapeHtml(t("apply_now")))}</button>
+      ${state.improveCount < MAX_IMPROVES ? `<button class="secondary icon-row" onclick="showImproveUpload()">${iconRow("file-text", escapeHtml(t("improve_cv_btn")))}</button>` : ''}
     </div>
   `;
   scrollToBottom();
@@ -355,7 +382,7 @@ function showImproveUpload() {
   actionArea().innerHTML = `
     <div class="hint">${escapeHtml(t("upload_updated_cv"))}</div>
     <input type="file" id="improve_cv_file" accept=".pdf,.docx" />
-    <button onclick="uploadImprovedCV()">${escapeHtml(t("upload_improved_btn"))}</button>
+    <button class="icon-row" onclick="uploadImprovedCV()">${iconRow("file-text", escapeHtml(t("upload_improved_btn")))}</button>
     <div id="improve_result"></div>
   `;
   scrollToBottom();
@@ -370,7 +397,7 @@ async function uploadImprovedCV() {
     return;
   }
 
-  resultEl.innerHTML = `<div class="hint">${escapeHtml(t("reading_updated_cv"))}</div>`;
+  resultEl.innerHTML = `<div class="hint icon-row">${iconRow("file-text", escapeHtml(t("reading_updated_cv")))}</div>`;
   const formData = new FormData();
   formData.append("init_data", tg.initData);
   formData.append("file", file);
@@ -390,7 +417,7 @@ async function uploadImprovedCV() {
     renderPostImproveChoice();
   } catch (err) {
     console.error("Improved CV upload failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("upload_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("upload_failed"))))}</div>`;
   } finally {
     clearTimeout(timeout);
   }
@@ -400,7 +427,7 @@ function renderPostImproveChoice() {
   if (state.improveCount >= MAX_IMPROVES) {
     actionArea().innerHTML = `
       <div class="hint">${escapeHtml(t("improve_limit_reached"))}</div>
-      <button onclick="applyDirectly()">${escapeHtml(t("apply_now"))}</button>
+      <button class="icon-row" onclick="applyDirectly()">${iconRow("check-circle", escapeHtml(t("apply_now")))}</button>
     `;
     scrollToBottom();
     return;
@@ -408,8 +435,8 @@ function renderPostImproveChoice() {
   actionArea().innerHTML = `
     <div class="prompt-block">${escapeHtml(t("improve_choice"))}</div>
     <div class="row">
-      <button onclick="applyDirectly()">${escapeHtml(t("apply_now"))}</button>
-      <button class="secondary" onclick="checkFit()">${escapeHtml(t("check_match_again"))}</button>
+      <button class="icon-row" onclick="applyDirectly()">${iconRow("check-circle", escapeHtml(t("apply_now")))}</button>
+      <button class="secondary icon-row" onclick="checkFit()">${iconRow("bar-chart", escapeHtml(t("check_match_again")))}</button>
     </div>
   `;
   scrollToBottom();
@@ -417,8 +444,8 @@ function renderPostImproveChoice() {
 
 function renderSaved() {
   actionArea().innerHTML = `
-    <div class="hint">${escapeHtml(t("saved_confirmation"))}</div>
-    <button class="secondary" onclick="showApplications()">${escapeHtml(t("view_my_applications"))}</button>
+    <div class="hint icon-row">${iconRow("check-circle", escapeHtml(t("saved_confirmation")))}</div>
+    <button class="secondary icon-row" onclick="showApplications()">${iconRow("clipboard-list", escapeHtml(t("view_my_applications")))}</button>
   `;
   scrollToBottom();
 }

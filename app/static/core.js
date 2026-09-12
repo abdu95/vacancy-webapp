@@ -128,7 +128,8 @@ function scrollToBottom() {
 
 function updateChecksHeader(remaining) {
   const badge = document.getElementById("nav-checks");
-  badge.textContent = `🎫 ${checksLabel(remaining)}`;
+  badge.classList.add("icon-row");
+  badge.innerHTML = iconRow("zap", escapeHtml(checksLabel(remaining)));
   badge.hidden = false;
 }
 
@@ -175,10 +176,19 @@ async function checkCVAndRoute() {
       const bodyEl = document.getElementById("welcome-body");
       bodyEl.textContent = `${bodyEl.textContent} ${t("welcome_free_checks_line", { quota: q.quota })}`;
     }
+
+    // Opened from a vacancy-alert message's button (?alert_batch=<id>) -
+    // real user feedback: that button used to just land on the home
+    // screen with no link back to what the message was about. Overrides
+    // whichever screen showScreen() above just picked.
+    const alertBatchId = new URLSearchParams(location.search).get("alert_batch");
+    if (alertBatchId) {
+      await openAlertBatch(alertBatchId);
+    }
   } catch (err) {
     console.error("CV status check failed:", err);
     document.getElementById("loading-gate").innerHTML = `
-      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("couldnt_load_profile")))}</div>
+      <div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("couldnt_load_profile"))))}</div>
       <button onclick="checkCVAndRoute()">${escapeHtml(t("retry_btn"))}</button>
     `;
   }
@@ -187,7 +197,8 @@ checkCVAndRoute();
 
 // Profile is now a plain hub tab: My CVs / My Checks / My Applications.
 // Checks-remaining lives on its own screen (checks-screen, behind the
-// header's 🔔), not bundled in here - they're two different things.
+// header's nav-checks badge), not bundled in here - they're two different
+// things.
 function showProfile() {
   showScreen("profile-screen");
 }

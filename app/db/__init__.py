@@ -34,6 +34,7 @@ from app.db.applications import (
 from app.db.analyses import delete_analysis, get_analysis, list_analyses, save_analysis, save_roadmap_item
 from app.db.alerts import (
     filter_new_vacancy_urls,
+    get_alert_batch,
     get_saved_search,
     list_users_with_alerts_enabled,
     mark_vacancies_alerted,
@@ -48,7 +49,7 @@ __all__ = [
     "add_cv", "delete_cv", "get_active_cv_text", "list_cvs", "set_active_cv",
     "VALID_STATUSES", "delete_application", "list_applications", "save_application", "update_application_status",
     "delete_analysis", "get_analysis", "list_analyses", "save_analysis", "save_roadmap_item",
-    "filter_new_vacancy_urls", "get_saved_search", "list_users_with_alerts_enabled",
+    "filter_new_vacancy_urls", "get_alert_batch", "get_saved_search", "list_users_with_alerts_enabled",
     "mark_vacancies_alerted", "save_search_criteria",
     "get_or_create_order", "log_event",
     "get_active_companies", "check_connection",

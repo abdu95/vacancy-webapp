@@ -14,13 +14,14 @@ async function analyzeCV() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = `<div class="hint">${escapeHtml(t(looksLikeUrl(jd) ? "analyzing_link_message_web" : "analyzing_message_web"))}</div>`;
+  const analyzingKey = looksLikeUrl(jd) ? "analyzing_link_message_web" : "analyzing_message_web";
+  resultEl.innerHTML = `<div class="hint icon-row">${iconRow(KEY_ICON[analyzingKey], escapeHtml(t(analyzingKey)))}</div>`;
 
   try {
     const data = await callApi("/api/cv-jd-analysis", { jd });
     if (data.limit_reached) {
       document.getElementById("jd-input-box").hidden = true;
-      resultEl.innerHTML = `<div class="prompt-block">${escapeHtml(t("analysis_limit_reached"))}</div>`;
+      resultEl.innerHTML = `<div class="prompt-block icon-row">${iconRow("alert-circle", escapeHtml(t("analysis_limit_reached")))}</div>`;
       const buyBox = document.createElement("div");
       resultEl.appendChild(buyBox);
       await renderBuyChecks(buyBox);
@@ -36,7 +37,7 @@ async function analyzeCV() {
     renderAnalysisResult(data);
   } catch (err) {
     console.error("Analysis failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("analysis_failed_web")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("analysis_failed_web"))))}</div>`;
   } finally {
     btn.disabled = false;
   }
@@ -45,7 +46,7 @@ async function analyzeCV() {
 // Shared between the live analysis screen and the My Checks history detail
 // view - same four cards either way, just fed live data vs. a saved row.
 function analysisBlocksHtml(ats, xyz, tools, level) {
-  const toolEmoji = { strong: "✅", mentioned: "🟡", not_found: "❌" };
+  const toolIcon = { strong: "check-circle", mentioned: "dot-circle", not_found: "x-circle" };
   const toolLabelKey = { strong: "tool_strong", mentioned: "tool_mentioned", not_found: "tool_not_found" };
 
   const rewritesHtml = (xyz.rewrites || []).slice(0, 2).map(r => `
@@ -57,7 +58,7 @@ function analysisBlocksHtml(ats, xyz, tools, level) {
 
   const toolsHtml = Object.entries(tools || {}).map(([name, rating]) => `
     <div class="tool-row">
-      <span>${toolEmoji[rating] || "•"} ${escapeHtml(name)}</span>
+      <span class="icon-row">${iconRow(toolIcon[rating] || "dot-circle", escapeHtml(name))}</span>
       <span>${escapeHtml(t(toolLabelKey[rating] || "tool_not_found"))}</span>
     </div>
   `).join("");
@@ -66,14 +67,14 @@ function analysisBlocksHtml(ats, xyz, tools, level) {
     <div class="card">
       <h3>${escapeHtml(t("ats_heading"))} — ${ats.score}/100</h3>
       <div class="score-bar"><div class="score-bar-fill" style="width:${ats.score}%;"></div></div>
-      <div>✅ <b>${escapeHtml(t("matched_label"))}</b> ${escapeHtml((ats.matched || []).join(", ") || "—")}</div>
-      <div>❌ <b>${escapeHtml(t("missing_label"))}</b> ${escapeHtml((ats.missing || []).join(", ") || "—")}</div>
+      <div class="icon-row-top">${iconRow("check-circle", `<b>${escapeHtml(t("matched_label"))}</b> ${escapeHtml((ats.matched || []).join(", ") || "—")}`)}</div>
+      <div class="icon-row-top">${iconRow("x-circle", `<b>${escapeHtml(t("missing_label"))}</b> ${escapeHtml((ats.missing || []).join(", ") || "—")}`)}</div>
       <p>${escapeHtml(ats.verdict || "")}</p>
     </div>
     <div class="card" style="margin-top:12px;">
       <h3>${escapeHtml(t("xyz_heading"))}</h3>
-      <div>${escapeHtml(t("xyz_passing_label"))} ${(xyz.passing || []).length}</div>
-      <div>${escapeHtml(t("xyz_failing_label"))} ${(xyz.failing || []).length}</div>
+      <div class="icon-row">${iconRow("check-circle", `${escapeHtml(t("xyz_passing_label"))} ${(xyz.passing || []).length}`)}</div>
+      <div class="icon-row">${iconRow("x-circle", `${escapeHtml(t("xyz_failing_label"))} ${(xyz.failing || []).length}`)}</div>
       ${rewritesHtml ? `<p style="margin-top:8px;"><b>${escapeHtml(t("xyz_rewrites_label"))}</b></p>${rewritesHtml}` : ""}
     </div>
     <div class="card" style="margin-top:12px;">
@@ -91,7 +92,7 @@ function renderAnalysisResult(data) {
   const el = document.getElementById("analysis-result");
   el.innerHTML = `
     ${analysisBlocksHtml(data.ats, data.xyz, data.tools, data.level)}
-    <button id="get_roadmap_btn" onclick="startRoadmap()">${escapeHtml(t("get_roadmap_btn"))}</button>
+    <button id="get_roadmap_btn" class="icon-row" onclick="startRoadmap()">${iconRow("map", escapeHtml(t("get_roadmap_btn")))}</button>
     <div id="roadmap-area"></div>
   `;
   scrollToBottom();
@@ -172,7 +173,7 @@ async function loadRoadmapItem(item) {
   }
 
   const areaEl = document.getElementById("roadmap-area");
-  areaEl.innerHTML = `<div class="hint">${escapeHtml(t("analyzing_message_web"))}</div>`;
+  areaEl.innerHTML = `<div class="hint icon-row">${iconRow("sparkles", escapeHtml(t("analyzing_message_web")))}</div>`;
   try {
     // Reuse an in-flight prefetch for this exact item if one exists,
     // instead of firing a second (real, paid) API call for the same item.
@@ -192,7 +193,7 @@ async function loadRoadmapItem(item) {
     // was re-entering the JD and re-running the whole analysis from
     // scratch. This retry re-fetches just this item, nothing upstream.
     areaEl.innerHTML = `
-      <div class="error">⚠️ ${escapeHtml(friendlyError(err, t("roadmap_failed_web")))}</div>
+      <div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("roadmap_failed_web"))))}</div>
       <button onclick="loadRoadmapItem(${item})">${escapeHtml(t("retry_btn"))}</button>
     `;
   }
@@ -252,7 +253,7 @@ function renderRoadmapCarousel() {
 // the user exactly how many free checks they have left, and either offer
 // to analyze another job or send them straight to buying more checks.
 async function renderRoadmapDone(nextEl) {
-  nextEl.innerHTML = `<div class="hint" style="margin-top:8px;">${escapeHtml(t("roadmap_done"))}</div><div id="post-roadmap-next"></div>`;
+  nextEl.innerHTML = `<div class="hint icon-row" style="margin-top:8px;">${iconRow("check-circle", escapeHtml(t("roadmap_done")))}</div><div id="post-roadmap-next"></div>`;
   const box = document.getElementById("post-roadmap-next");
   box.innerHTML = `<div class="hint">…</div>`;
   try {
@@ -266,7 +267,7 @@ async function renderRoadmapDone(nextEl) {
     } else {
       box.innerHTML = `
         <div class="prompt-block">${escapeHtml(freeChecksLine(q.remaining))}</div>
-        <button onclick="goToAnalysis()">${escapeHtml(t("analyze_another_btn"))}</button>
+        <button class="icon-row" onclick="goToAnalysis()">${iconRow("bar-chart", escapeHtml(t("analyze_another_btn")))}</button>
       `;
     }
   } catch (err) {

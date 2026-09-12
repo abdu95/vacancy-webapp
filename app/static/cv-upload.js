@@ -63,7 +63,7 @@ async function uploadCV() {
     }
   } catch (err) {
     console.error("CV upload failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("upload_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("upload_failed"))))}</div>`;
   } finally {
     clearTimeout(timeout);
     btn.disabled = false;
@@ -88,7 +88,7 @@ async function showMyCvs() {
     renderMyCvsList();
   } catch (err) {
     console.error("Loading CVs failed:", err);
-    listEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("my_cvs_load_failed")))}</div>`;
+    listEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("my_cvs_load_failed"))))}</div>`;
   }
 }
 
@@ -108,7 +108,7 @@ function renderMyCvsList() {
     <div class="card clickable ${cv.is_active ? "active-cv" : ""}" style="margin-bottom:8px;" onclick="openCvDetail(${cv.id})">
       <h3>${escapeHtml(cv.label)}</h3>
       <div class="company">${escapeHtml(new Date(cv.created_at).toLocaleDateString())}</div>
-      ${cv.is_active ? `<div class="active-cv-badge">✓ ${escapeHtml(t("my_cvs_active_badge"))}</div>` : ""}
+      ${cv.is_active ? `<div class="active-cv-badge icon-row">${iconRow("check", escapeHtml(t("my_cvs_active_badge")))}</div>` : ""}
     </div>
   `).join("");
 }
@@ -129,7 +129,7 @@ function openCvDetail(cvId) {
       ${cv.is_active ? `<div style="margin-top:8px;"><b>${escapeHtml(t("my_cvs_active_badge"))}</b></div>` : ""}
     </div>
     ${cv.is_active ? "" : `<button class="secondary" onclick="activateCv(${cv.id})">${escapeHtml(t("my_cvs_set_active_btn"))}</button>`}
-    <button class="danger" onclick="confirmDeleteCv(${cv.id})">${escapeHtml(t("delete_application_btn"))}</button>
+    <button class="danger icon-row" onclick="confirmDeleteCv(${cv.id})">${iconRow("trash-2", escapeHtml(t("delete_application_btn")))}</button>
     <div id="cv-detail-action-result"></div>
   `;
   scrollToBottom();
@@ -149,7 +149,7 @@ async function activateCv(cvId) {
     openCvDetail(cvId);
   } catch (err) {
     console.error("Set active CV failed:", err);
-    el.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("my_cvs_activate_failed")))}</div>`;
+    el.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("my_cvs_activate_failed"))))}</div>`;
   }
 }
 
@@ -172,7 +172,7 @@ async function deleteCvNow(cvId) {
     await showMyCvs();
   } catch (err) {
     console.error("Delete CV failed:", err);
-    el.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("delete_failed")))}</div>`;
+    el.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("delete_failed"))))}</div>`;
   }
 }
 
@@ -211,7 +211,7 @@ async function uploadNewCv() {
     showMyCvs();
   } catch (err) {
     console.error("CV upload failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("upload_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("upload_failed"))))}</div>`;
   } finally {
     clearTimeout(timeout);
     btn.disabled = false;

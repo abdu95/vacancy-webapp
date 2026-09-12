@@ -19,7 +19,7 @@ async function showVacancyAlerts() {
   } catch (err) {
     console.error("Loading saved search failed:", err);
     document.getElementById("vacancy-alerts-result").innerHTML =
-      `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("vacancy_alerts_load_failed")))}</div>`;
+      `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("vacancy_alerts_load_failed"))))}</div>`;
   }
 }
 
@@ -48,7 +48,7 @@ async function saveVacancyAlerts() {
     resultEl.innerHTML = `<div class="hint">${escapeHtml(message)}</div>`;
   } catch (err) {
     console.error("Saving alert settings failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("vacancy_alerts_save_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("vacancy_alerts_save_failed"))))}</div>`;
   } finally {
     btn.disabled = false;
   }

@@ -81,9 +81,32 @@ print("PASS: filter_new_vacancy_urls short-circuits on an empty input")
 
 pool, cursor = make_fake_pool()
 with mock.patch.object(db, "get_pool", return_value=pool):
-    db.mark_vacancies_alerted(777, ["https://a.com/2"])
+    db.mark_vacancies_alerted(
+        777, [{"title": "Data Analyst", "company": "Acme", "location": "Tashkent",
+               "summary": "desc", "url": "https://a.com/2"}],
+        "batch-1", "Data Analyst", "Tashkent",
+    )
     assert cursor.executemany.called
-print("PASS: mark_vacancies_alerted records the newly-sent URLs")
+    rows = cursor.executemany.call_args[0][1]
+    assert rows == [(777, "https://a.com/2", "batch-1", "Data Analyst", "Acme", "Tashkent", "desc", "Data Analyst", "Tashkent")]
+print("PASS: mark_vacancies_alerted records the newly-sent vacancies with their batch")
+
+pool, cursor = make_fake_pool(fetchall_result=[
+    ("Data Analyst", "Acme", "Tashkent", "desc", "https://a.com/2", "Data Analyst", "Tashkent"),
+])
+with mock.patch.object(db, "get_pool", return_value=pool):
+    result = db.get_alert_batch(777, "batch-1")
+    assert result == {
+        "vacancies": [{"title": "Data Analyst", "company": "Acme", "location": "Tashkent",
+                       "summary": "desc", "url": "https://a.com/2"}],
+        "job_title": "Data Analyst", "location": "Tashkent",
+    }, result
+print("PASS: get_alert_batch returns the batch's vacancies plus the searched criteria")
+
+pool, cursor = make_fake_pool(fetchall_result=[])
+with mock.patch.object(db, "get_pool", return_value=pool):
+    assert db.get_alert_batch(777, "missing-batch") is None
+print("PASS: get_alert_batch returns None for an unknown/foreign batch_id")
 
 # --- vacancy_alerts._build_digest ---
 
@@ -119,8 +142,14 @@ with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777,
     summary = _run(vacancy_alerts.run_vacancy_alerts())
     assert summary == {"users_checked": 1, "alerts_sent": 1, "failed": 0}, summary
     m_send.assert_called_once()
-    m_mark.assert_called_once_with(777, ["https://a.com/1"])
-print("PASS: run_vacancy_alerts sends one digest and marks the sent URLs when there's something new")
+    send_args = m_send.call_args[0]
+    assert send_args[0] == 777
+    batch_id = send_args[2]
+    m_mark.assert_called_once_with(
+        777, [{"title": "Data Analyst", "company": "Acme", "url": "https://a.com/1"}],
+        batch_id, "Data Analyst", "Tashkent",
+    )
+print("PASS: run_vacancy_alerts sends one digest and marks the sent vacancies under one batch_id")
 
 with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777, "Data Analyst", "Tashkent")]), \
      mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(

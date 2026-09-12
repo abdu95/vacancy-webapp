@@ -23,7 +23,7 @@ async function showApplications() {
     renderApplications();
   } catch (err) {
     console.error("Loading applications failed:", err);
-    listEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("applications_load_failed")))}</div>`;
+    listEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("applications_load_failed"))))}</div>`;
   }
 }
 
@@ -90,7 +90,7 @@ function openApplicationDetail(id) {
         <button class="${s === app.status ? '' : 'secondary'}" style="margin-top:8px;" onclick="setApplicationStatus(${app.id}, '${s}')">${escapeHtml(statusLabel(s))}</button>
       `).join("")}
     </div>
-    <button class="danger" onclick="confirmDeleteApplication(${app.id})">${escapeHtml(t("delete_application_btn"))}</button>
+    <button class="danger icon-row" onclick="confirmDeleteApplication(${app.id})">${iconRow("trash-2", escapeHtml(t("delete_application_btn")))}</button>
     <div id="detail-action-result"></div>
   `;
   scrollToBottom();
@@ -111,10 +111,10 @@ async function setApplicationStatus(id, status) {
     const app = allApplications.find(a => a.id === id);
     if (app) app.status = status;
     openApplicationDetail(id);
-    document.getElementById("detail-action-result").innerHTML = `<div class="hint">${escapeHtml(t("status_updated"))}</div>`;
+    document.getElementById("detail-action-result").innerHTML = `<div class="hint icon-row">${iconRow("check-circle", escapeHtml(t("status_updated")))}</div>`;
   } catch (err) {
     console.error("Status update failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("status_update_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("status_update_failed"))))}</div>`;
   }
 }
 
@@ -140,6 +140,6 @@ async function deleteApplicationNow(id) {
     renderApplications();
   } catch (err) {
     console.error("Delete failed:", err);
-    resultEl.innerHTML = `<div class="error">⚠️ ${escapeHtml(friendlyError(err, t("delete_failed")))}</div>`;
+    resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("delete_failed"))))}</div>`;
   }
 }

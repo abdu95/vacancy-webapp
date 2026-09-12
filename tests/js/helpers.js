@@ -5,13 +5,14 @@ const { JSDOM } = require("jsdom");
 const STATIC_DIR = path.resolve(__dirname, "..", "..", "app", "static");
 
 // The app's JS was one 1897-line app.js until 2026-09-07, split into
-// these 8 files (loaded by index.html as plain <script src> tags, no
+// these files (loaded by index.html as plain <script src> tags, no
 // bundler - see core.js's header comment for why load order mostly
-// doesn't matter except i18n.js-before-core.js). Kept in this exact
-// order here too, so the eval'd code sees the same load order the real
-// page does.
+// doesn't matter except icons.js/i18n.js-before-core.js, since icons.js
+// defines icon()/setIconText()/KEY_ICON that i18n.js's
+// applyStaticTranslations() calls). Kept in this exact order here too,
+// so the eval'd code sees the same load order the real page does.
 const APP_SCRIPTS = [
-  "i18n.js", "checks.js", "vacancy-alerts.js", "cv-upload.js",
+  "icons.js", "i18n.js", "checks.js", "vacancy-alerts.js", "cv-upload.js",
   "applications.js", "vacancy-search.js", "analysis.js", "core.js",
 ];
 
@@ -35,7 +36,7 @@ const APP_SCRIPTS = [
  * jsdom's runScripts: "dangerously" executes them the same way a
  * browser would.
  */
-function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" }, fetchImpl } = {}) {
+function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" }, fetchImpl, url = "https://example.com/" } = {}) {
   let rawHtml = fs.readFileSync(path.join(STATIC_DIR, "index.html"), "utf8");
   rawHtml = rawHtml.replace(/<script[^>]*><\/script>/g, "");
   rawHtml = rawHtml.replace(/<link[^>]*>/g, "");
@@ -44,7 +45,10 @@ function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" },
   // above, so nothing auto-executes at parse time) is needed so inline
   // onclick="..." HTML attributes get wired up as real event handlers,
   // not just "outside-only" which only lets us eval() code manually.
-  const dom = new JSDOM(rawHtml, { url: "https://example.com/", runScripts: "dangerously" });
+  // `url` defaults to a plain page load; pass e.g.
+  // "https://example.com/?alert_batch=..." to test code that reads
+  // location.search (checkCVAndRoute's vacancy-alert deep link).
+  const dom = new JSDOM(rawHtml, { url, runScripts: "dangerously" });
   const { window } = dom;
 
   window.Telegram = {

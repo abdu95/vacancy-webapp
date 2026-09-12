@@ -252,3 +252,13 @@ button.nav-chip {
 .controls-row select { font-size: 13px; padding: 8px; }
 [hidden] { display: none !important; }
 input[type="file"] { border: none; padding: 8px 0; background: none; }
+/* Icon set (icons.js) replacing emoji in labels/messages - real user
+   feedback that the emoji didn't fit the app's look. .icon-row centers
+   an icon next to a short single-line label (buttons, badges);
+   .icon-row-top top-aligns the icon against text that may wrap
+   (error/hint/prompt-block messages). */
+.icon { width: 16px; height: 16px; flex: none; }
+.icon-row { display: inline-flex; align-items: center; gap: 6px; }
+button.icon-row, .menu-option .icon-row, .nav-chip.icon-row { width: 100%; justify-content: center; }
+.icon-row-top { display: flex; align-items: flex-start; gap: 8px; }
+.icon-row-top .icon { margin-top: 2px; }

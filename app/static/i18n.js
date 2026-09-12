@@ -1,6 +1,6 @@
 // ── i18n ─────────────────────────────────────────────────────────────
 const I18N = {
-  nav_applications: { en: "📋 My Applications", uz: "📋 Arizalarim", ru: "📋 Мои заявки" },
+  nav_applications: { en: "My Applications", uz: "Arizalarim", ru: "Мои заявки" },
   greeting: { en: "Hi {name}", uz: "Salom, {name}", ru: "Привет, {name}" },
   open_from_bot: {
     en: "Open this from the Telegram bot, not a regular browser.",
@@ -13,7 +13,7 @@ const I18N = {
     ru: "Загрузите резюме, чтобы я мог искать вакансии и сравнивать их с вашим резюме.",
   },
   cv_file_label: { en: "CV (PDF or DOCX)", uz: "CV (PDF yoki DOCX)", ru: "Резюме (PDF или DOCX)" },
-  upload_cv_btn: { en: "📄 Upload CV", uz: "📄 CV yuklash", ru: "📄 Загрузить резюме" },
+  upload_cv_btn: { en: "Upload CV", uz: "CV yuklash", ru: "Загрузить резюме" },
   // Real tester feedback (2026-09-09): the native file input's own button
   // was unstyled, untranslated (always shows the browser's own language),
   // and unclear how it differed from the real "Upload CV" button next to
@@ -21,19 +21,19 @@ const I18N = {
   // replaces the native chrome with a styled, translated trigger plus a
   // visible "selected: <filename>" line, same two-step flow both screens
   // that upload a CV already have (pick, then a separate submit).
-  choose_file_btn: { en: "📎 Choose file", uz: "📎 Fayl tanlash", ru: "📎 Выбрать файл" },
+  choose_file_btn: { en: "Choose file", uz: "Fayl tanlash", ru: "Выбрать файл" },
   no_file_chosen: { en: "No file chosen", uz: "Fayl tanlanmagan", ru: "Файл не выбран" },
   file_chosen_label: { en: "Selected: {name}", uz: "Tanlangan: {name}", ru: "Выбрано: {name}" },
   title_screen_hint: {
     en: "What position are you looking for?", uz: "Qanday lavozimni qidiryapsiz?", ru: "Какую должность вы ищете?",
   },
-  type_own: { en: "✍️ Type my own", uz: "✍️ O'zim kiritaman", ru: "✍️ Введу сам" },
-  suggest_from_cv: { en: "🤖 Suggest from my CV", uz: "🤖 CV'imdan taklif qiling", ru: "🤖 Предложить по резюме" },
+  type_own: { en: "Type my own", uz: "O'zim kiritaman", ru: "Введу сам" },
+  suggest_from_cv: { en: "Suggest from my CV", uz: "CV'imdan taklif qiling", ru: "Предложить по резюме" },
   job_title_label: { en: "Job title", uz: "Lavozim nomi", ru: "Название должности" },
   job_title_placeholder: { en: "e.g. Data Analyst", uz: "masalan: Data Analyst", ru: "например: Data Analyst" },
   next_btn: { en: "Next →", uz: "Keyingi →", ru: "Далее →" },
   suggest_different: {
-    en: "🔄 Suggest different titles", uz: "🔄 Boshqa lavozimlarni taklif qilish", ru: "🔄 Предложить другие варианты",
+    en: "Suggest different titles", uz: "Boshqa lavozimlarni taklif qilish", ru: "Предложить другие варианты",
   },
   searching_for_prefix: { en: "Searching for", uz: "Qidirilmoqda:", ru: "Ищу:" },
   change_link: { en: "← change", uz: "← o'zgartirish", ru: "← изменить" },
@@ -41,7 +41,7 @@ const I18N = {
   location_placeholder: {
     en: "e.g. Tashkent, Remote, Europe", uz: "masalan: Toshkent, Remote, Yevropa", ru: "например: Ташкент, Remote, Европа",
   },
-  search_btn: { en: "🔍 Search", uz: "🔍 Qidirish", ru: "🔍 Искать" },
+  search_btn: { en: "Search", uz: "Qidirish", ru: "Искать" },
   applications_title: {
     en: "Your tracked applications", uz: "Kuzatilayotgan arizalaringiz", ru: "Ваши отслеживаемые заявки",
   },
@@ -53,11 +53,11 @@ const I18N = {
   choose_file_first: {
     en: "Choose a PDF or DOCX file first.", uz: "Avval PDF yoki DOCX faylni tanlang.", ru: "Сначала выберите файл PDF или DOCX.",
   },
-  reading_cv: { en: "📄 Reading your CV…", uz: "📄 CV'ingiz o'qilmoqda…", ru: "📄 Читаю ваше резюме…" },
+  reading_cv: { en: "Reading your CV…", uz: "CV'ingiz o'qilmoqda…", ru: "Читаю ваше резюме…" },
   upload_failed: {
     en: "Upload failed, try again.", uz: "Yuklash amalga oshmadi, qaytadan urinib ko'ring.", ru: "Загрузка не удалась, попробуйте снова.",
   },
-  analyzing_cv: { en: "🤖 Analyzing your CV…", uz: "🤖 CV'ingiz tahlil qilinmoqda…", ru: "🤖 Анализирую ваше резюме…" },
+  analyzing_cv: { en: "Analyzing your CV…", uz: "CV'ingiz tahlil qilinmoqda…", ru: "Анализирую ваше резюме…" },
   suggestions_failed: {
     en: "Couldn't get suggestions, try again.", uz: "Takliflarni olib bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось получить варианты, попробуйте снова.",
   },
@@ -67,7 +67,7 @@ const I18N = {
   status_applied: { en: "Applied", uz: "Yuborilgan", ru: "Подана" },
   status_phone_screen: { en: "Phone screen", uz: "Telefon suhbati", ru: "Телефонное интервью" },
   status_tech_interview: { en: "Tech interview", uz: "Texnik intervyu", ru: "Техническое интервью" },
-  status_offer: { en: "Offer 🎉", uz: "Taklif 🎉", ru: "Оффер 🎉" },
+  status_offer: { en: "Offer", uz: "Taklif", ru: "Оффер" },
   status_rejected: { en: "Rejected", uz: "Rad etilgan", ru: "Отказ" },
   status_ghosted: { en: "Ghosted", uz: "Javob kelmadi", ru: "Без ответа" },
   applications_load_failed: {
@@ -87,9 +87,9 @@ const I18N = {
   status_label_prefix: { en: "Status:", uz: "Holat:", ru: "Статус:" },
   match_suffix: { en: "% match", uz: "% moslik", ru: "% совпадение" },
   view_posting: { en: "View posting →", uz: "E'lonni ko'rish →", ru: "Посмотреть вакансию →" },
-  open_link_btn: { en: "🔗 Open", uz: "🔗 Ochish", ru: "🔗 Открыть" },
-  copy_url_btn: { en: "📋 Copy", uz: "📋 Nusxalash", ru: "📋 Копировать" },
-  match_my_cv_btn: { en: "🎯 Match my CV", uz: "🎯 CV'imni moslashtirish", ru: "🎯 Сравнить с резюме" },
+  open_link_btn: { en: "Open", uz: "Ochish", ru: "Открыть" },
+  copy_url_btn: { en: "Copy", uz: "Nusxalash", ru: "Копировать" },
+  match_my_cv_btn: { en: "Match my CV", uz: "CV'imni moslashtirish", ru: "Сравнить с резюме" },
   copy_url_success: {
     en: "Link copied - paste it into Analyze to run a full check against this job.",
     uz: "Havola nusxalandi - ushbu ish e'loniga to'liq tahlil qilish uchun Tahlil bo'limiga joylashtiring.",
@@ -108,9 +108,9 @@ const I18N = {
   // concurrently now, not a slow serial/web-search flow) - stale timing
   // claims are worse than no claim at all.
   searching_message: {
-    en: "🔎 Searching for {title} in {location}…",
-    uz: "🔎 {title} bo'yicha {location} joyida qidirilmoqda…",
-    ru: "🔎 Ищу «{title}» в {location}…",
+    en: "Searching for {title} in {location}…",
+    uz: "{title} bo'yicha {location} joyida qidirilmoqda…",
+    ru: "Ищу «{title}» в {location}…",
   },
   search_failed: {
     en: "Search failed on our end. Please try again in a moment.",
@@ -128,8 +128,8 @@ const I18N = {
     ru: "На этот раз новых вакансий не найдено — вот то, что уже было найдено.",
   },
   like_this_one: { en: "Like this one?", uz: "Shu yoqdimi?", ru: "Нравится эта вакансия?" },
-  yes_like_it: { en: "👍 Yes, I like it", uz: "👍 Ha, yoqdi", ru: "👍 Да, нравится" },
-  search_again_btn: { en: "🔄 Search again", uz: "🔄 Qayta qidirish", ru: "🔄 Искать снова" },
+  yes_like_it: { en: "Yes, I like it", uz: "Ha, yoqdi", ru: "Да, нравится" },
+  search_again_btn: { en: "Search again", uz: "Qayta qidirish", ru: "Искать снова" },
   search_limit_title: {
     en: "You've used your 3 free searches for this job title.",
     uz: "Ushbu lavozim uchun 3 ta bepul qidiruvingizdan foydalandingiz.",
@@ -141,25 +141,25 @@ const I18N = {
     ru: "Попробуйте другую должность для новых результатов, включите ежедневные уведомления вместо ручного поиска, либо сделайте полный анализ резюме и вакансии.",
   },
   search_cap_new_title_btn: {
-    en: "🔎 Try a different title", uz: "🔎 Boshqa lavozimni sinash", ru: "🔎 Попробовать другую должность",
+    en: "Try a different title", uz: "Boshqa lavozimni sinash", ru: "Попробовать другую должность",
   },
   search_cap_alerts_btn: {
-    en: "🔔 Get daily alerts instead", uz: "🔔 Kunlik bildirishnomalarni yoqish", ru: "🔔 Включить ежедневные уведомления",
+    en: "Get daily alerts instead", uz: "Kunlik bildirishnomalarni yoqish", ru: "Включить ежедневные уведомления",
   },
   search_cap_analyze_btn: {
-    en: "📊 Analyze my CV against a job", uz: "📊 CV'imni ish e'loniga solishtirish", ru: "📊 Сравнить резюме с вакансией",
+    en: "Analyze my CV against a job", uz: "CV'imni ish e'loniga solishtirish", ru: "Сравнить резюме с вакансией",
   },
   carousel_prev: { en: "← Previous", uz: "← Oldingi", ru: "← Предыдущая" },
   carousel_next: { en: "Next →", uz: "Keyingi →", ru: "Следующая →" },
   how_proceed: { en: "How do you want to proceed?", uz: "Qanday davom etishni xohlaysiz?", ru: "Как хотите продолжить?" },
-  apply_directly: { en: "✅ Apply directly", uz: "✅ To'g'ridan-to'g'ri ariza berish", ru: "✅ Подать заявку сразу" },
-  check_cv_fit: { en: "📊 Check my CV fit", uz: "📊 CV moslikni tekshirish", ru: "📊 Проверить соответствие резюме" },
+  apply_directly: { en: "Apply directly", uz: "To'g'ridan-to'g'ri ariza berish", ru: "Подать заявку сразу" },
+  check_cv_fit: { en: "Check my CV fit", uz: "CV moslikni tekshirish", ru: "Проверить соответствие резюме" },
   saving: { en: "Saving…", uz: "Saqlanmoqda…", ru: "Сохраняю…" },
   apply_failed: {
     en: "Couldn't save your application, try again.", uz: "Arizangizni saqlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось сохранить заявку, попробуйте снова.",
   },
   checking_fit: {
-    en: "📊 Comparing your CV to this vacancy…", uz: "📊 CV'ingiz ushbu vakansiya bilan solishtirilmoqda…", ru: "📊 Сравниваю ваше резюме с этой вакансией…",
+    en: "Comparing your CV to this vacancy…", uz: "CV'ingiz ushbu vakansiya bilan solishtirilmoqda…", ru: "Сравниваю ваше резюме с этой вакансией…",
   },
   scoring_failed: {
     en: "Couldn't score your CV, try again.", uz: "CV'ingizni baholab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось оценить резюме, попробуйте снова.",
@@ -167,13 +167,13 @@ const I18N = {
   match_heading: { en: "{score}% Match", uz: "{score}% Moslik", ru: "{score}% Соответствие" },
   matched_label: { en: "Matched:", uz: "Mos keldi:", ru: "Совпало:" },
   missing_label: { en: "Missing:", uz: "Yetishmayapti:", ru: "Отсутствует:" },
-  apply_anyway: { en: "✅ Apply anyway", uz: "✅ Baribir ariza berish", ru: "✅ Подать заявку в любом случае" },
-  get_recommendations: { en: "📝 Get recommendations", uz: "📝 Tavsiyalar olish", ru: "📝 Получить рекомендации" },
+  apply_anyway: { en: "Apply anyway", uz: "Baribir ariza berish", ru: "Подать заявку в любом случае" },
+  get_recommendations: { en: "Get recommendations", uz: "Tavsiyalar olish", ru: "Получить рекомендации" },
   level_question: {
     en: "What's your level for this role?", uz: "Ushbu lavozim uchun darajangiz qanday?", ru: "Какой у вас уровень для этой роли?",
   },
   working_out_fixes: {
-    en: "📝 Working out what to fix…", uz: "📝 Nimani tuzatish kerakligi aniqlanmoqda…", ru: "📝 Определяю, что нужно исправить…",
+    en: "Working out what to fix…", uz: "Nimani tuzatish kerakligi aniqlanmoqda…", ru: "Определяю, что нужно исправить…",
   },
   recommendations_failed: {
     en: "Couldn't get recommendations, try again.", uz: "Tavsiyalarni olib bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось получить рекомендации, попробуйте снова.",
@@ -186,16 +186,16 @@ const I18N = {
     uz: "Ariza berishga tayyormisiz, yoki avval CV'ingizni yaxshilamoqchimisiz?",
     ru: "Готовы подать заявку, или сначала хотите улучшить резюме?",
   },
-  apply_now: { en: "✅ Apply now", uz: "✅ Hozir ariza berish", ru: "✅ Подать заявку сейчас" },
-  improve_cv_btn: { en: "📄 Improve CV", uz: "📄 CV'ni yaxshilash", ru: "📄 Улучшить резюме" },
+  apply_now: { en: "Apply now", uz: "Hozir ariza berish", ru: "Подать заявку сейчас" },
+  improve_cv_btn: { en: "Improve CV", uz: "CV'ni yaxshilash", ru: "Улучшить резюме" },
   upload_updated_cv: {
     en: "Upload your updated CV (PDF or DOCX).", uz: "Yangilangan CV'ingizni yuklang (PDF yoki DOCX).", ru: "Загрузите обновлённое резюме (PDF или DOCX).",
   },
   upload_improved_btn: {
-    en: "📄 Upload improved CV", uz: "📄 Yaxshilangan CV'ni yuklash", ru: "📄 Загрузить улучшенное резюме",
+    en: "Upload improved CV", uz: "Yaxshilangan CV'ni yuklash", ru: "Загрузить улучшенное резюме",
   },
   reading_updated_cv: {
-    en: "📄 Reading your updated CV…", uz: "📄 Yangilangan CV'ingiz o'qilmoqda…", ru: "📄 Читаю обновлённое резюме…",
+    en: "Reading your updated CV…", uz: "Yangilangan CV'ingiz o'qilmoqda…", ru: "Читаю обновлённое резюме…",
   },
   improve_limit_reached: {
     en: "CV updated. You've reached the improve limit for this vacancy — ready to apply.",
@@ -207,14 +207,14 @@ const I18N = {
     uz: "CV yangilandi. Hozir ariza berasizmi, yoki avval yangi moslik foizini tekshirasizmi?",
     ru: "Резюме обновлено. Подать заявку сейчас или сначала проверить новый процент соответствия?",
   },
-  check_match_again: { en: "📊 Check match again", uz: "📊 Moslikni qayta tekshirish", ru: "📊 Проверить соответствие снова" },
+  check_match_again: { en: "Check match again", uz: "Moslikni qayta tekshirish", ru: "Проверить соответствие снова" },
   saved_confirmation: {
-    en: "✅ Saved to your tracked applications.", uz: "✅ Kuzatilayotgan arizalaringizga saqlandi.", ru: "✅ Сохранено в отслеживаемых заявках.",
+    en: "Saved to your tracked applications.", uz: "Kuzatilayotgan arizalaringizga saqlandi.", ru: "Сохранено в отслеживаемых заявках.",
   },
-  view_my_applications: { en: "📋 View my applications", uz: "📋 Arizalarimni ko'rish", ru: "📋 Посмотреть мои заявки" },
+  view_my_applications: { en: "View my applications", uz: "Arizalarimni ko'rish", ru: "Посмотреть мои заявки" },
   update_status_prompt: { en: "Update status:", uz: "Holatni yangilash:", ru: "Обновить статус:" },
-  delete_application_btn: { en: "🗑 Delete application", uz: "🗑 Arizani o'chirish", ru: "🗑 Удалить заявку" },
-  status_updated: { en: "✅ Status updated.", uz: "✅ Holat yangilandi.", ru: "✅ Статус обновлён." },
+  delete_application_btn: { en: "Delete application", uz: "Arizani o'chirish", ru: "Удалить заявку" },
+  status_updated: { en: "Status updated.", uz: "Holat yangilandi.", ru: "Статус обновлён." },
   status_update_failed: {
     en: "Couldn't update status, try again.", uz: "Holatni yangilab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось обновить статус, попробуйте снова.",
   },
@@ -253,7 +253,7 @@ const I18N = {
     en: "Or analyze your CV", uz: "Yoki CV'ingizni tahlil qiling", ru: "Или проанализируйте резюме",
   },
   home_analyze_option: {
-    en: "📊 Analyze my CV against a job", uz: "📊 CV'imni ish e'loniga solishtirish", ru: "📊 Сравнить резюме с вакансией",
+    en: "Analyze my CV against a job", uz: "CV'imni ish e'loniga solishtirish", ru: "Сравнить резюме с вакансией",
   },
   home_analyze_hint: {
     en: "Get an ATS score, bullet-point fixes, and a step-by-step roadmap.",
@@ -261,7 +261,7 @@ const I18N = {
     ru: "Получите ATS-балл, исправления и пошаговый план.",
   },
   home_vacancy_option: {
-    en: "🔍 Find & track vacancies", uz: "🔍 Vakansiya topish va kuzatish", ru: "🔍 Найти и отслеживать вакансии",
+    en: "Find & track vacancies", uz: "Vakansiya topish va kuzatish", ru: "Найти и отслеживать вакансии",
   },
   home_vacancy_hint: {
     en: "Search live postings and keep track of where you've applied.",
@@ -279,14 +279,14 @@ const I18N = {
     uz: "To'liq ish e'loni matnini yoki havolasini shu yerga joylashtiring…",
     ru: "Вставьте сюда полный текст вакансии или ссылку на неё…",
   },
-  analyze_btn: { en: "🤖 Analyze", uz: "🤖 Tahlil qilish", ru: "🤖 Анализировать" },
+  analyze_btn: { en: "Analyze", uz: "Tahlil qilish", ru: "Анализировать" },
   // Real tester feedback (2026-09-09): with multiple CVs in My CVs, nothing
   // on the Analyze screen said which one would actually be used. Tapping
   // this goes straight to My CVs to switch it.
   active_cv_indicator: {
-    en: "📄 Using: {label} — tap to change",
-    uz: "📄 Ishlatilmoqda: {label} — o'zgartirish uchun bosing",
-    ru: "📄 Используется: {label} — нажмите, чтобы изменить",
+    en: "Using: {label} — tap to change",
+    uz: "Ishlatilmoqda: {label} — o'zgartirish uchun bosing",
+    ru: "Используется: {label} — нажмите, чтобы изменить",
   },
   jd_too_short_web: {
     en: "Paste a fuller job description (at least 100 characters), or a link to the posting.",
@@ -294,14 +294,14 @@ const I18N = {
     ru: "Вставьте более полный текст вакансии (не менее 100 символов) или ссылку на вакансию.",
   },
   analyzing_message_web: {
-    en: "🤖 Analyzing your CV against this job… usually takes 15–30 seconds.",
-    uz: "🤖 CV'ingiz ushbu ish e'loni bilan tahlil qilinmoqda… odatda 15–30 soniya vaqt oladi.",
-    ru: "🤖 Анализирую ваше резюме по этой вакансии… обычно занимает 15–30 секунд.",
+    en: "Analyzing your CV against this job… usually takes 15–30 seconds.",
+    uz: "CV'ingiz ushbu ish e'loni bilan tahlil qilinmoqda… odatda 15–30 soniya vaqt oladi.",
+    ru: "Анализирую ваше резюме по этой вакансии… обычно занимает 15–30 секунд.",
   },
   analyzing_link_message_web: {
-    en: "🔗 Reading the job posting from your link, then analyzing… usually takes 15–30 seconds.",
-    uz: "🔗 Havoladagi ish e'loni o'qilmoqda, so'ng tahlil qilinadi… odatda 15–30 soniya vaqt oladi.",
-    ru: "🔗 Читаю вакансию по вашей ссылке, затем анализирую… обычно занимает 15–30 секунд.",
+    en: "Reading the job posting from your link, then analyzing… usually takes 15–30 seconds.",
+    uz: "Havoladagi ish e'loni o'qilmoqda, so'ng tahlil qilinadi… odatda 15–30 soniya vaqt oladi.",
+    ru: "Читаю вакансию по вашей ссылке, затем анализирую… обычно занимает 15–30 секунд.",
   },
   analysis_failed_web: {
     en: "Analysis failed on our end. Please try again in a moment.",
@@ -310,31 +310,31 @@ const I18N = {
   },
   ats_heading: { en: "ATS Score", uz: "ATS Bali", ru: "ATS-балл" },
   xyz_heading: { en: "Bullet Point Check", uz: "Band tekshiruvi", ru: "Проверка формулировок" },
-  xyz_passing_label: { en: "✅ Passing:", uz: "✅ O'tgan:", ru: "✅ Хорошо:" },
-  xyz_failing_label: { en: "❌ Needs work:", uz: "❌ Yaxshilash kerak:", ru: "❌ Нужна доработка:" },
+  xyz_passing_label: { en: "Passing:", uz: "O'tgan:", ru: "Хорошо:" },
+  xyz_failing_label: { en: "Needs work:", uz: "Yaxshilash kerak:", ru: "Нужна доработка:" },
   xyz_rewrites_label: { en: "Suggested rewrites:", uz: "Tavsiya etilgan tahrirlar:", ru: "Предлагаемые правки:" },
   tools_heading: { en: "Tool Radar", uz: "Vositalar radari", ru: "Радар инструментов" },
   tool_strong: { en: "Strong", uz: "Kuchli", ru: "Сильно" },
   tool_mentioned: { en: "Mentioned", uz: "Tilga olingan", ru: "Упомянуто" },
   tool_not_found: { en: "Not found", uz: "Topilmadi", ru: "Не найдено" },
   level_heading: { en: "Your Level", uz: "Sizning darajangiz", ru: "Ваш уровень" },
-  get_roadmap_btn: { en: "🗺 Get My Roadmap", uz: "🗺 Rejamni olish", ru: "🗺 Получить план" },
+  get_roadmap_btn: { en: "Get My Roadmap", uz: "Rejamni olish", ru: "Получить план" },
   roadmap_continue_btn: { en: "Continue →", uz: "Davom etish →", ru: "Продолжить →" },
   roadmap_failed_web: {
     en: "Couldn't build this section, try again.", uz: "Bu bo'limni tayyorlab bo'lmadi, qaytadan urinib ko'ring.", ru: "Не удалось подготовить этот раздел, попробуйте снова.",
   },
   roadmap_done: {
-    en: "✅ That's the end of your roadmap. Good luck!", uz: "✅ Rejangiz shu bilan tugaydi. Omad tilaymiz!", ru: "✅ На этом ваш план завершён. Удачи!",
+    en: "That's the end of your roadmap. Good luck!", uz: "Rejangiz shu bilan tugaydi. Omad tilaymiz!", ru: "На этом ваш план завершён. Удачи!",
   },
   analysis_limit_reached: {
-    en: "🚦 You've used all your free checks.", uz: "🚦 Siz barcha bepul tekshiruvlaringizdan foydalandingiz.", ru: "🚦 Вы использовали все бесплатные проверки.",
+    en: "You've used all your free checks.", uz: "Siz barcha bepul tekshiruvlaringizdan foydalandingiz.", ru: "Вы использовали все бесплатные проверки.",
   },
   buy_checks_intro: {
     en: "Buy more — {price} UZS per check. Choose how many:",
     uz: "Ko'proq sotib oling — har biri {price} so'm. Nechtasini xohlaysiz?",
     ru: "Купите ещё — по {price} сум за проверку. Выберите количество:",
   },
-  buy_custom_btn: { en: "🔢 Custom amount", uz: "🔢 Boshqa miqdor", ru: "🔢 Другое количество" },
+  buy_custom_btn: { en: "Custom amount", uz: "Boshqa miqdor", ru: "Другое количество" },
   buy_custom_prompt: {
     en: "How many checks? Enter a number from 1 to 100.",
     uz: "Nechta tekshiruv? 1 dan 100 gacha son kiriting.",
@@ -360,9 +360,9 @@ const I18N = {
     en: "I've paid — check status", uz: "To'ladim — holatni tekshirish", ru: "Я оплатил — проверить статус",
   },
   checkout_confirmed: {
-    en: "✅ Payment received! You now have {remaining} checks.",
-    uz: "✅ To'lov qabul qilindi! Endi sizda {remaining} ta tekshiruv bor.",
-    ru: "✅ Оплата получена! Теперь у вас {remaining} проверок.",
+    en: "Payment received! You now have {remaining} checks.",
+    uz: "To'lov qabul qilindi! Endi sizda {remaining} ta tekshiruv bor.",
+    ru: "Оплата получена! Теперь у вас {remaining} проверок.",
   },
   checkout_still_pending: {
     en: "Not confirmed yet - if you just paid, give it a moment and check again.",
@@ -391,9 +391,9 @@ const I18N = {
     ru: "У вас осталось {remaining} бесплатных проверок.",
   },
   welcome_body: {
-    en: "👋 Welcome to AcceptedAI. I help you get accepted into your dream job — analyze your CV against a job description, or find and track vacancies.",
-    uz: "👋 AcceptedAI'ga xush kelibsiz. Men sizga orzuingizdagi ishga qabul qilinishda yordam beraman — CV'ingizni ish e'loniga solishtiring yoki vakansiyalarni toping va kuzating.",
-    ru: "👋 Добро пожаловать в AcceptedAI. Я помогу вам получить работу мечты — сравните резюме с вакансией или найдите и отслеживайте вакансии.",
+    en: "Welcome to AcceptedAI. I help you get accepted into your dream job — analyze your CV against a job description, or find and track vacancies.",
+    uz: "AcceptedAI'ga xush kelibsiz. Men sizga orzuingizdagi ishga qabul qilinishda yordam beraman — CV'ingizni ish e'loniga solishtiring yoki vakansiyalarni toping va kuzating.",
+    ru: "Добро пожаловать в AcceptedAI. Я помогу вам получить работу мечты — сравните резюме с вакансией или найдите и отслеживайте вакансии.",
   },
   welcome_free_checks_line: {
     en: "You get {quota} free CV-vs-job analyses to try it out.",
@@ -402,11 +402,11 @@ const I18N = {
   },
   welcome_continue_btn: { en: "Get started →", uz: "Boshlash →", ru: "Начать →" },
   profile_title: { en: "Profile", uz: "Profil", ru: "Профиль" },
-  profile_buy_more_btn: { en: "💳 Buy more checks", uz: "💳 Ko'proq tekshiruv sotib olish", ru: "💳 Купить ещё проверок" },
-  profile_my_cvs_btn: { en: "📄 My CVs", uz: "📄 Mening CV'larim", ru: "📄 Мои резюме" },
-  profile_applications_btn: { en: "📋 My Applications", uz: "📋 Arizalarim", ru: "📋 Мои заявки" },
-  profile_my_checks_btn: { en: "📊 My Checks", uz: "📊 Mening tekshiruvlarim", ru: "📊 Мои проверки" },
-  profile_vacancy_alerts_btn: { en: "🔔 Vacancy Alerts", uz: "🔔 Vakansiya bildirishnomalari", ru: "🔔 Уведомления о вакансиях" },
+  profile_buy_more_btn: { en: "Buy more checks", uz: "Ko'proq tekshiruv sotib olish", ru: "Купить ещё проверок" },
+  profile_my_cvs_btn: { en: "My CVs", uz: "Mening CV'larim", ru: "Мои резюме" },
+  profile_applications_btn: { en: "My Applications", uz: "Arizalarim", ru: "Мои заявки" },
+  profile_my_checks_btn: { en: "My Checks", uz: "Mening tekshiruvlarim", ru: "Мои проверки" },
+  profile_vacancy_alerts_btn: { en: "Vacancy Alerts", uz: "Vakansiya bildirishnomalari", ru: "Уведомления о вакансиях" },
   vacancy_alerts_explainer: {
     en: "Set a job title (and optional location) and we'll message you here once a day if a genuinely new matching vacancy shows up - no repeats.",
     uz: "Lavozim nomini (va xohlasangiz joylashuvni) kiriting - agar chinakam yangi mos vakansiya paydo bo'lsa, kuniga bir marta shu yerda xabar beramiz - takrorlanmaydi.",
@@ -416,7 +416,7 @@ const I18N = {
   vacancy_alerts_title_placeholder: { en: "e.g. Data Analyst", uz: "masalan, Data Analyst", ru: "например, Data Analyst" },
   vacancy_alerts_location_label: { en: "Location (optional)", uz: "Joylashuv (ixtiyoriy)", ru: "Локация (необязательно)" },
   vacancy_alerts_location_placeholder: { en: "e.g. Tashkent, or leave blank for Any", uz: "masalan, Toshkent, yoki bo'sh qoldiring", ru: "например, Ташкент, или оставьте пустым" },
-  vacancy_alerts_toggle_label: { en: "🔔 Notify me about new matches", uz: "🔔 Yangi mos vakansiyalar haqida xabar bering", ru: "🔔 Уведомлять о новых подходящих вакансиях" },
+  vacancy_alerts_toggle_label: { en: "Notify me about new matches", uz: "Yangi mos vakansiyalar haqida xabar bering", ru: "Уведомлять о новых подходящих вакансиях" },
   vacancy_alerts_save_btn: { en: "Save", uz: "Saqlash", ru: "Сохранить" },
   vacancy_alerts_load_failed: {
     en: "Couldn't load your alert settings.", uz: "Bildirishnoma sozlamalarini yuklab bo'lmadi.", ru: "Не удалось загрузить настройки уведомлений.",
@@ -485,7 +485,7 @@ const I18N = {
     ru: "У вас закончились бесплатные проверки. Купите ещё, чтобы проанализировать другую вакансию:",
   },
   analyze_another_btn: {
-    en: "📊 Analyze another job", uz: "📊 Boshqa ish e'lonini tahlil qilish", ru: "📊 Проанализировать другую вакансию",
+    en: "Analyze another job", uz: "Boshqa ish e'lonini tahlil qilish", ru: "Проанализировать другую вакансию",
   },
 };
 
@@ -503,31 +503,31 @@ function t(key, vars) {
 function applyStaticTranslations() {
   document.getElementById("cv-gate-hint").textContent = t("cv_gate_hint");
   document.getElementById("cv-file-label").textContent = t("cv_file_label");
-  document.getElementById("upload_btn").textContent = t("upload_cv_btn");
-  document.getElementById("cv_file_trigger").textContent = t("choose_file_btn");
+  setIconText("upload_btn", "upload_cv_btn");
+  setIconText("cv_file_trigger", "choose_file_btn");
   document.getElementById("cv_file_name").textContent = t("no_file_chosen");
   document.getElementById("home-vacancy-label").textContent = t("home_vacancy_label");
   document.getElementById("home-analyze-label").textContent = t("home_analyze_label");
-  document.getElementById("home-analyze-option").textContent = t("home_analyze_option");
+  setIconText("home-analyze-option", "home_analyze_option");
   document.getElementById("home-analyze-hint").textContent = t("home_analyze_hint");
-  document.getElementById("home-vacancy-option").textContent = t("home_vacancy_option");
+  setIconText("home-vacancy-option", "home_vacancy_option");
   document.getElementById("home-vacancy-hint").textContent = t("home_vacancy_hint");
   document.getElementById("analysis-title").textContent = t("analysis_title");
   document.getElementById("jd-label").textContent = t("jd_label");
   document.getElementById("jd_text").placeholder = t("jd_placeholder");
-  document.getElementById("analyze_btn").textContent = t("analyze_btn");
+  setIconText("analyze_btn", "analyze_btn");
   document.getElementById("title-screen-hint").textContent = t("title_screen_hint");
-  document.getElementById("btn-type-own").textContent = t("type_own");
-  document.getElementById("btn-suggest-cv").textContent = t("suggest_from_cv");
+  setIconText("btn-type-own", "type_own");
+  setIconText("btn-suggest-cv", "suggest_from_cv");
   document.getElementById("manual-title-label").textContent = t("job_title_label");
   document.getElementById("manual_title").placeholder = t("job_title_placeholder");
   document.getElementById("btn-next-title").textContent = t("next_btn");
-  document.getElementById("btn-suggest-again").textContent = t("suggest_different");
+  setIconText("btn-suggest-again", "suggest_different");
   document.getElementById("searching-for-label").firstChild.textContent = t("searching_for_prefix") + " ";
   document.getElementById("btn-change-title").textContent = t("change_link");
   document.getElementById("location-label").textContent = t("location_label");
   document.getElementById("location").placeholder = t("location_placeholder");
-  document.getElementById("search_btn").textContent = t("search_btn");
+  setIconText("search_btn", "search_btn");
   document.getElementById("applications-title").textContent = t("applications_title");
   document.getElementById("btn-applications-back").textContent = t("back_link");
   document.getElementById("btn-cv-gate-back").textContent = t("back_link");
@@ -537,8 +537,8 @@ function applyStaticTranslations() {
   document.getElementById("my-cvs-title").textContent = t("my_cvs_title");
   document.getElementById("btn-my-cvs-back").textContent = t("back_link");
   document.getElementById("my-cvs-upload-label").textContent = t("my_cvs_upload_label");
-  document.getElementById("upload_new_cv_btn").textContent = t("upload_cv_btn");
-  document.getElementById("new_cv_file_trigger").textContent = t("choose_file_btn");
+  setIconText("upload_new_cv_btn", "upload_cv_btn");
+  setIconText("new_cv_file_trigger", "choose_file_btn");
   document.getElementById("new_cv_file_name").textContent = t("no_file_chosen");
   document.getElementById("tab-home-label").textContent = t("tab_home_label");
   document.getElementById("tab-search-label").textContent = t("tab_search_label");
@@ -546,20 +546,20 @@ function applyStaticTranslations() {
   document.getElementById("tab-profile-label").textContent = t("tab_profile_label");
   document.getElementById("checks-title").textContent = t("checks_title");
   document.getElementById("btn-checks-back").textContent = t("back_link");
-  document.getElementById("profile-my-cvs-label").textContent = t("profile_my_cvs_btn");
-  document.getElementById("profile-my-checks-label").textContent = t("profile_my_checks_btn");
-  document.getElementById("profile-my-applications-label").textContent = t("profile_applications_btn");
-  document.getElementById("my-checks-title").textContent = t("profile_my_checks_btn");
+  setIconText("profile-my-cvs-label", "profile_my_cvs_btn");
+  setIconText("profile-my-checks-label", "profile_my_checks_btn");
+  setIconText("profile-my-applications-label", "profile_applications_btn");
+  setIconText("my-checks-title", "profile_my_checks_btn");
   document.getElementById("btn-my-checks-back").textContent = t("back_link");
-  document.getElementById("profile-vacancy-alerts-label").textContent = t("profile_vacancy_alerts_btn");
-  document.getElementById("vacancy-alerts-title").textContent = t("profile_vacancy_alerts_btn");
+  setIconText("profile-vacancy-alerts-label", "profile_vacancy_alerts_btn");
+  setIconText("vacancy-alerts-title", "profile_vacancy_alerts_btn");
   document.getElementById("btn-vacancy-alerts-back").textContent = t("back_link");
   document.getElementById("vacancy-alerts-explainer").textContent = t("vacancy_alerts_explainer");
   document.getElementById("vacancy-alerts-title-label").textContent = t("vacancy_alerts_title_label");
   document.getElementById("alerts_job_title").placeholder = t("vacancy_alerts_title_placeholder");
   document.getElementById("vacancy-alerts-location-label").textContent = t("vacancy_alerts_location_label");
   document.getElementById("alerts_location").placeholder = t("vacancy_alerts_location_placeholder");
-  document.getElementById("vacancy-alerts-toggle-label").textContent = t("vacancy_alerts_toggle_label");
+  setIconText("vacancy-alerts-toggle-label", "vacancy_alerts_toggle_label");
   document.getElementById("save_vacancy_alerts_btn").textContent = t("vacancy_alerts_save_btn");
 
   const filterEl = document.getElementById("applications-filter");

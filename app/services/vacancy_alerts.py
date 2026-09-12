@@ -14,6 +14,7 @@ doesn't need one just to POST one HTTP request.
 
 import logging
 import os
+import uuid
 
 import httpx
 
@@ -31,7 +32,7 @@ _domain = os.getenv("RAILWAY_PUBLIC_DOMAIN")
 MINI_APP_URL = f"https://{_domain}" if _domain else None
 
 
-async def _send_telegram_message(telegram_id: int, text: str) -> None:
+async def _send_telegram_message(telegram_id: int, text: str, batch_id: str) -> None:
     payload = {
         "chat_id": telegram_id,
         "text": text,
@@ -43,7 +44,15 @@ async def _send_telegram_message(telegram_id: int, text: str) -> None:
             # A generic "Open AcceptedAI" button gave no reason to actually
             # tap it - naming the specific, valuable action (checking fit
             # against the new vacancy) is what should pull someone back in.
-            "inline_keyboard": [[{"text": "🎯 Check if your CV matches", "web_app": {"url": MINI_APP_URL}}]]
+            # The ?alert_batch= param is how the Mini App knows to open
+            # straight into these exact vacancies instead of the home
+            # screen (real user feedback - it used to just drop them on
+            # home with no link back to what the message was about); see
+            # core.js's checkCVAndRoute() and /api/alert-batch.
+            "inline_keyboard": [[{
+                "text": "🎯 Check if your CV matches",
+                "web_app": {"url": f"{MINI_APP_URL}/?alert_batch={batch_id}"},
+            }]]
         }
     async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.post(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage", json=payload)
@@ -81,8 +90,9 @@ async def run_vacancy_alerts() -> dict:
             fresh = [v for v in vacancies if v.get("url") in new_urls]
             if not fresh:
                 continue
-            await _send_telegram_message(telegram_id, _build_digest(job_title, location, fresh))
-            db.mark_vacancies_alerted(telegram_id, [v["url"] for v in fresh])
+            batch_id = str(uuid.uuid4())
+            await _send_telegram_message(telegram_id, _build_digest(job_title, location, fresh), batch_id)
+            db.mark_vacancies_alerted(telegram_id, fresh, batch_id, job_title, location)
             sent += 1
         except Exception:
             logger.exception("Vacancy alert run failed for telegram_id=%s", telegram_id)

@@ -28,7 +28,7 @@ test("t() renders the language the backend reports, not just English", async () 
   const dom = loadApp({ fetchImpl: defaultFetchMock({ "/api/cv-status": () => ({ has_cv: true, lang: "ru" }) }) });
   await flush();
   const { window } = dom;
-  assert.equal(window.t("get_roadmap_btn"), "🗺 Получить план");
+  assert.equal(window.t("get_roadmap_btn"), "Получить план");
 });
 
 test("a failed first load shows a retry button, not a dead end", async () => {
@@ -116,6 +116,43 @@ test("checkCVAndRoute skips welcome and shows home-screen directly for a returni
   const { document } = dom.window;
   assert.equal(document.getElementById("home-screen").hidden, false);
   assert.equal(document.getElementById("welcome-screen").hidden, true);
+});
+
+test("opening the Mini App from a vacancy-alert message's button shows that alert's vacancies, not the home screen", async () => {
+  const dom = loadApp({
+    url: "https://example.com/?alert_batch=batch-1",
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/alert-batch": (body) => {
+        assert.equal(body.batch_id, "batch-1");
+        return {
+          vacancies: [{ title: "Data Analyst", company: "Acme", location: "Tashkent", summary: "...", url: "https://boards.greenhouse.io/acme/jobs/1" }],
+          job_title: "Data Analyst", location: "Tashkent",
+        };
+      },
+    }),
+  });
+  await flush();
+  const { document } = dom.window;
+  assert.equal(document.getElementById("search-screen").hidden, false, "must land on the vacancy carousel, not home");
+  assert.equal(document.getElementById("home-screen").hidden, true);
+  assert.equal(document.getElementById("chosen-title-label").textContent, "Data Analyst");
+  assert.match(document.getElementById("result").innerHTML, /Data Analyst/);
+  assert.match(document.getElementById("result").innerHTML, /Acme/);
+});
+
+test("an expired or foreign alert_batch link falls back to the normal home screen instead of breaking", async () => {
+  const dom = loadApp({
+    url: "https://example.com/?alert_batch=gone",
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/alert-batch": () => ({ status: 404, body: { detail: "This alert has expired or no longer exists" } }),
+    }),
+  });
+  await flush();
+  const { document } = dom.window;
+  assert.equal(document.getElementById("home-screen").hidden, false);
+  assert.equal(document.getElementById("search-screen").hidden, true);
 });
 
 test("each home-screen button has its own intro label above it, not one shared generic hint - real user feedback", async () => {
@@ -231,9 +268,10 @@ test("a vacancy card offers Open link / Copy URL / Match my CV immediately, befo
   const cardHtml = document.getElementById("result").innerHTML;
   assert.match(cardHtml, /href="https:\/\/boards\.greenhouse\.io\/acme\/jobs\/1"/, "Open link must point at the real posting URL");
   // Short, one-line labels on purpose (real feedback: two-line button text
-  // didn't match the single-line height of the buttons below it).
-  assert.match(cardHtml, />🔗 Open</);
-  assert.match(cardHtml, />📋 Copy</);
+  // didn't match the single-line height of the buttons below it). Icons
+  // (not emoji) lead each label - see icons.js.
+  assert.match(cardHtml, /<span>Open<\/span>/);
+  assert.match(cardHtml, /<span>Copy<\/span>/);
   assert.match(cardHtml, /Match my CV/);
   // Not gated behind "like it" - the decision block is still showing
   // (untouched), these 3 buttons are available regardless.
@@ -903,7 +941,7 @@ test("finishing the roadmap with checks remaining offers 'analyze another job'",
 
   const area = document.getElementById("roadmap-area");
   assert.match(area.innerHTML, /Analyze another job/);
-  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2 checks", "header badge should refresh after roadmap completion");
+  assert.equal(document.getElementById("nav-checks").textContent, "2 checks", "header badge should refresh after roadmap completion");
 });
 
 test("finishing the roadmap at zero checks routes straight into buying more", async () => {
@@ -938,7 +976,7 @@ test("a successful analysis updates the header checks badge", async () => {
   const { document, window } = dom.window;
   window.goToAnalysis();
   await runAnalysis(window, document);
-  assert.equal(document.getElementById("nav-checks").textContent, "🎫 2 checks");
+  assert.equal(document.getElementById("nav-checks").textContent, "2 checks");
 });
 
 test("hitting the free-check limit during analysis shows the buy-checks flow, not the results", async () => {
