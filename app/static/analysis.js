@@ -15,7 +15,7 @@ async function analyzeCV() {
 
   btn.disabled = true;
   const analyzingKey = looksLikeUrl(jd) ? "analyzing_link_message_web" : "analyzing_message_web";
-  resultEl.innerHTML = `<div class="hint icon-row">${iconRow(KEY_ICON[analyzingKey], escapeHtml(t(analyzingKey)))}</div>`;
+  resultEl.innerHTML = bigLoader(KEY_ICON[analyzingKey], t(analyzingKey));
 
   try {
     const data = await callApi("/api/cv-jd-analysis", { jd });
@@ -173,7 +173,7 @@ async function loadRoadmapItem(item) {
   }
 
   const areaEl = document.getElementById("roadmap-area");
-  areaEl.innerHTML = `<div class="hint icon-row">${iconRow("sparkles", escapeHtml(t("analyzing_message_web")))}</div>`;
+  areaEl.innerHTML = bigLoader("sparkles", t("analyzing_message_web"));
   try {
     // Reuse an in-flight prefetch for this exact item if one exists,
     // instead of firing a second (real, paid) API call for the same item.

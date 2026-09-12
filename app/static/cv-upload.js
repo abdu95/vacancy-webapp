@@ -22,7 +22,7 @@ async function uploadCV() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = `<div class="hint">${escapeHtml(t("reading_cv"))}</div>`;
+  resultEl.innerHTML = bigLoader("file-text", t("reading_cv"));
 
   const formData = new FormData();
   formData.append("init_data", tg.initData);
@@ -188,7 +188,7 @@ async function uploadNewCv() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = `<div class="hint">${escapeHtml(t("reading_cv"))}</div>`;
+  resultEl.innerHTML = bigLoader("file-text", t("reading_cv"));
 
   const formData = new FormData();
   formData.append("init_data", tg.initData);

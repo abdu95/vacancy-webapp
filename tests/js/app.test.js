@@ -267,6 +267,7 @@ test("a vacancy card offers Open link / Copy URL / Match my CV immediately, befo
 
   const cardHtml = document.getElementById("result").innerHTML;
   assert.match(cardHtml, /href="https:\/\/boards\.greenhouse\.io\/acme\/jobs\/1"/, "Open link must point at the real posting URL");
+  assert.match(cardHtml, /<b>Acme<\/b>/, "company name must be bold - real feedback that it wasn't visible enough");
   // Short, one-line labels on purpose (real feedback: two-line button text
   // didn't match the single-line height of the buttons below it). Icons
   // (not emoji) lead each label - see icons.js.
@@ -394,6 +395,120 @@ test("a failed 'apply directly' offers a retry, not a dead end", async () => {
   await flush();
   assert.equal(calls, 2);
   assert.match(areaEl.innerHTML, new RegExp(window.t("saved_confirmation")));
+});
+
+test("applying opens the real posting (not just a silent save) - real user feedback that Apply only ever tracked the application, never actually took the user to apply", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://boards.greenhouse.io/acme/jobs/1", summary: "..." }] }),
+      "/api/apply": () => ({ saved: true }),
+    }),
+  });
+  await flush();
+  const { window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+  window.likeVacancy();
+
+  await window.applyDirectly();
+  assert.equal(window.__lastOpenedLink, "https://boards.greenhouse.io/acme/jobs/1", "applying must open the real job posting, not just record it");
+});
+
+test("applying shows an unmissable native popup confirming the save, before opening the link - real user feedback that the small inline confirmation text was easy to miss entirely", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/apply": () => ({ saved: true }),
+    }),
+  });
+  await flush();
+  const { window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+  window.likeVacancy();
+
+  const order = [];
+  const realShowAlert = window.Telegram.WebApp.showAlert;
+  window.Telegram.WebApp.showAlert = (message, cb) => { order.push("popup:" + message); realShowAlert(message, cb); };
+  const realOpenLink = window.Telegram.WebApp.openLink;
+  window.Telegram.WebApp.openLink = (url) => { order.push("open:" + url); realOpenLink(url); };
+
+  await window.applyDirectly();
+  assert.deepEqual(order, [`popup:${window.t("saved_confirmation")}`, "open:https://x"], "the popup must fire, and be dismissed, before the link opens");
+});
+
+test("a failed apply shows neither the popup nor opens the link - nothing to confirm if it wasn't actually saved", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/apply": () => ({ status: 500, body: {} }),
+    }),
+  });
+  await flush();
+  const { window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+  window.likeVacancy();
+
+  await window.applyDirectly();
+  assert.equal(window.__lastOpenedLink, undefined);
+  assert.equal(window.__lastAlertMessage, undefined);
+});
+
+test("applying after a fit check saves the real match score, not null", async () => {
+  let applyBody = null;
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+      "/api/score-vacancy": () => ({ score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." }),
+      "/api/apply": (body) => { applyBody = body; return { saved: true }; },
+    }),
+  });
+  await flush();
+  const { window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  await window.checkFit();
+  await window.applyDirectly();
+  assert.deepEqual(applyBody.score, { score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." });
+});
+
+test("switching to a different vacancy clears a previously-checked score, so Apply can't attach it to the wrong posting", async () => {
+  let applyBody = "not called";
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({
+        vacancies: [
+          { title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x/1", summary: "..." },
+          { title: "BI Analyst", company: "Globex", location: "Remote", url: "https://x/2", summary: "..." },
+        ],
+      }),
+      "/api/score-vacancy": () => ({ score: 80, matched: ["SQL"], missing: [], verdict: "Good fit." }),
+      "/api/apply": (body) => { applyBody = body; return { saved: true }; },
+    }),
+  });
+  await flush();
+  const { window } = dom.window;
+  window.goToVacancySearch();
+  window.pickTitle("Data Analyst");
+  await window.search();
+
+  await window.checkFit(); // scores vacancy 1
+  window.showVacancy(1); // move to vacancy 2 without checking its fit
+  window.likeVacancy();
+  await window.applyDirectly();
+  assert.equal(applyBody.score, null, "vacancy 1's score must not leak onto vacancy 2's application");
+  assert.equal(applyBody.vacancy.url, "https://x/2");
 });
 
 test("a failed 'get recommendations' offers a retry for the SAME level, not a dead end - real user feedback (worked on the 2nd try, only after redoing everything)", async () => {
@@ -585,6 +700,24 @@ test("changing location and searching again clears the previous location's stale
   const html = document.getElementById("result").innerHTML;
   assert.ok(!html.includes("Bloomshop"), "the stale Tashkent card must not still be showing after searching Europe");
   assert.match(html, new RegExp(window.t("no_match_found")), "an empty result for the NEW location must show the honest no-match message");
+});
+
+test("searching for vacancies shows a large, unmissable loading state, not the old small inline hint - real feedback that a small loading message read as the button not working", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/search": () => ({ vacancies: [{ title: "Data Analyst", company: "Acme", location: "Remote", url: "https://x", summary: "..." }] }),
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.pickTitle("Data Analyst");
+
+  const pending = window.search(); // check the loading state before it resolves
+  const loadingHtml = document.getElementById("result").innerHTML;
+  assert.match(loadingHtml, /big-loader/, "must use the large loading state (see .big-loader in style.css), not the old small inline hint");
+  assert.match(loadingHtml, /spinner/);
+  await pending;
 });
 
 test("liking a vacancy hides the like/search-again/carousel/analyze-CV decision block, leaving only the current step's buttons", async () => {
@@ -977,6 +1110,25 @@ test("a successful analysis updates the header checks badge", async () => {
   window.goToAnalysis();
   await runAnalysis(window, document);
   assert.equal(document.getElementById("nav-checks").textContent, "2 checks");
+});
+
+test("analyzing a CV against a job shows a large, unmissable loading state, not the old small inline hint - this is the exact case real feedback called out ('we are analyzing your CV' was too small to notice)", async () => {
+  const dom = loadApp({
+    fetchImpl: defaultFetchMock({
+      "/api/cv-status": () => ({ has_cv: true, lang: "en" }),
+      "/api/cv-jd-analysis": () => FAKE_ANALYSIS,
+    }),
+  });
+  await flush();
+  const { document, window } = dom.window;
+  window.goToAnalysis();
+  document.getElementById("jd_text").value = "x".repeat(150);
+
+  const pending = window.analyzeCV(); // check the loading state before it resolves
+  const loadingHtml = document.getElementById("analysis-result").innerHTML;
+  assert.match(loadingHtml, /big-loader/, "must use the large loading state (see .big-loader in style.css), not the old small inline hint");
+  assert.match(loadingHtml, /spinner/);
+  await pending;
 });
 
 test("hitting the free-check limit during analysis shows the buy-checks flow, not the results", async () => {

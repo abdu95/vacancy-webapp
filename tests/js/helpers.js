@@ -58,6 +58,7 @@ function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" },
       ready() {},
       expand() {},
       openLink(url) { window.__lastOpenedLink = url; },
+      showAlert(message, cb) { window.__lastAlertMessage = message; if (cb) cb(); },
     },
   };
 

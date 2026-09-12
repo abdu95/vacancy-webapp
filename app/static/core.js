@@ -22,7 +22,7 @@ if (tg) {
 
 const state = {
   jobTitle: "", seenCompanies: [], searchCount: 0, lastSearchLocation: null,
-  vacancies: [], vacancyIndex: -1, improveCount: 0,
+  vacancies: [], vacancyIndex: -1, improveCount: 0, lastScore: null,
   jd: "", analysisLevel: "", analysisRemaining: null, analysisQuota: null, currentAnalysisId: null,
   hasCv: false, postUploadDestination: null,
   roadmapItems: [], roadmapIndex: -1, roadmapRequestSeq: 0, roadmapPrefetch: {},
@@ -242,4 +242,17 @@ function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text || "";
   return div.innerHTML;
+}
+
+// A large, centered spinner + message for steps that call out to the AI
+// or a live search and take a few seconds (analysis, vacancy search,
+// reading a CV, ...) - see .big-loader in style.css for why this exists
+// instead of the small inline .hint text these replaced.
+function bigLoader(iconName, text) {
+  return `
+    <div class="big-loader">
+      <div class="spinner"></div>
+      <div class="big-loader-text icon-row">${iconRow(iconName, escapeHtml(text))}</div>
+    </div>
+  `;
 }

@@ -20,7 +20,7 @@ async function suggestTitles() {
   const errEl = document.getElementById("title-error");
   box.hidden = false;
   errEl.innerHTML = "";
-  chipsEl.innerHTML = `<div class="hint icon-row">${iconRow("sparkles", escapeHtml(t("analyzing_cv")))}</div>`;
+  chipsEl.innerHTML = bigLoader("sparkles", t("analyzing_cv"));
 
   try {
     const data = await callApi("/api/suggest-titles", {});
@@ -123,7 +123,7 @@ async function search() {
   }
 
   btn.disabled = true;
-  resultEl.innerHTML = `<div class="hint icon-row">${iconRow("search", escapeHtml(t("searching_message", { title: state.jobTitle, location: location })))}</div>`;
+  resultEl.innerHTML = bigLoader("search", t("searching_message", { title: state.jobTitle, location: location }));
 
   try {
     const data = await callApi("/api/search", {
@@ -203,6 +203,11 @@ function renderVacancyCard() {
     resultEl.innerHTML = `<div class="hint">${escapeHtml(t("no_match_found"))}</div>`;
     return;
   }
+  // Every path that lands here is "now showing a (possibly different)
+  // vacancy" (fresh search, Prev/Next, an alert batch) - clearing here
+  // once means Apply can never attach a stale score left over from a
+  // vacancy the user isn't looking at anymore.
+  state.lastScore = null;
   const v = currentVacancy();
   const canSearchAgain = state.searchCount < MAX_SEARCHES;
   const canPrev = state.vacancyIndex > 0;
@@ -211,7 +216,7 @@ function renderVacancyCard() {
   resultEl.innerHTML = `
     <div class="card">
       <h3>${escapeHtml(v.title)}</h3>
-      <div class="company">${escapeHtml(v.company)} · ${escapeHtml(v.location)}</div>
+      <div class="company"><b>${escapeHtml(v.company)}</b> · ${escapeHtml(v.location)}</div>
       <p>${escapeHtml(v.summary)}</p>
       <div class="row">
         <a class="btn-link icon-row" href="${escapeHtml(v.url)}" target="_blank">${iconRow("link", escapeHtml(t("open_link_btn")))}</a>
@@ -270,10 +275,31 @@ function likeVacancy() {
   scrollToBottom();
 }
 async function applyDirectly() {
+  // "Apply directly/anyway/now" all land here. Two real pieces of
+  // feedback fixed together: (1) saving to My Applications was the only
+  // thing this ever did - it never actually took the user to apply, so
+  // this now opens the real posting; (2) the small inline "Saved..."
+  // text was easy to miss entirely, read as the button not working. A
+  // native popup fixes both - it's impossible to miss, and the posting
+  // opens right after it's dismissed (tg.openLink/window.open fallback,
+  // same pattern as buyChecks()).
+  const vacancy = currentVacancy();
   actionArea().innerHTML = `<div class="hint">${escapeHtml(t("saving"))}</div>`;
   try {
-    await callApi("/api/apply", { vacancy: currentVacancy(), score: null });
+    await callApi("/api/apply", { vacancy, score: state.lastScore });
     renderSaved();
+    const openLink = () => {
+      if (tg && tg.openLink) tg.openLink(vacancy.url);
+      else window.open(vacancy.url, "_blank");
+    };
+    if (tg && tg.showAlert) {
+      tg.showAlert(t("saved_confirmation"), openLink);
+    } else if (typeof window.alert === "function") {
+      window.alert(t("saved_confirmation"));
+      openLink();
+    } else {
+      openLink();
+    }
   } catch (err) {
     console.error("Apply failed:", err);
     actionArea().innerHTML = `
@@ -293,7 +319,7 @@ async function checkFit() {
     showScreen("cv-gate");
     return;
   }
-  actionArea().innerHTML = `<div class="hint icon-row">${iconRow("bar-chart", escapeHtml(t("checking_fit")))}</div>`;
+  actionArea().innerHTML = bigLoader("bar-chart", t("checking_fit"));
   try {
     const score = await callApi("/api/score-vacancy", { vacancy: currentVacancy() });
     state.lastScore = score;
@@ -339,7 +365,7 @@ function showLevelPicker() {
 }
 
 async function getRecommendations(level) {
-  actionArea().innerHTML = `<div class="hint icon-row">${iconRow("edit-3", escapeHtml(t("working_out_fixes")))}</div>`;
+  actionArea().innerHTML = bigLoader("edit-3", t("working_out_fixes"));
   try {
     const data = await callApi("/api/cv-recommendations", { vacancy: currentVacancy(), level });
     renderRecommendations(data.fixes);
@@ -397,7 +423,7 @@ async function uploadImprovedCV() {
     return;
   }
 
-  resultEl.innerHTML = `<div class="hint icon-row">${iconRow("file-text", escapeHtml(t("reading_updated_cv")))}</div>`;
+  resultEl.innerHTML = bigLoader("file-text", t("reading_updated_cv"));
   const formData = new FormData();
   formData.append("init_data", tg.initData);
   formData.append("file", file);
