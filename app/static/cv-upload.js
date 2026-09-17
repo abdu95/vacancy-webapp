@@ -21,7 +21,7 @@ async function uploadCV() {
     return;
   }
 
-  btn.disabled = true;
+  setButtonBusy(btn, t("please_wait"));
   resultEl.innerHTML = bigLoader("file-text", t("reading_cv"));
   scrollToBottom();
 
@@ -67,7 +67,7 @@ async function uploadCV() {
     resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("upload_failed"))))}</div>`;
   } finally {
     clearTimeout(timeout);
-    btn.disabled = false;
+    clearButtonBusy(btn);
   }
 }
 
@@ -188,7 +188,7 @@ async function uploadNewCv() {
     return;
   }
 
-  btn.disabled = true;
+  setButtonBusy(btn, t("please_wait"));
   resultEl.innerHTML = bigLoader("file-text", t("reading_cv"));
   scrollToBottom();
 
@@ -216,6 +216,6 @@ async function uploadNewCv() {
     resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("upload_failed"))))}</div>`;
   } finally {
     clearTimeout(timeout);
-    btn.disabled = false;
+    clearButtonBusy(btn);
   }
 }

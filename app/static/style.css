@@ -37,9 +37,9 @@ body {
 .tab-btn .tab-icon { line-height: 1; }
 .tab-btn .tab-icon svg { width: 22px; height: 22px; display: block; }
 .tab-btn.active { color: var(--tg-theme-button-color, #2481cc); font-weight: 600; }
-h2 { font-size: 18px; margin-bottom: 4px; }
-.hint { color: var(--tg-theme-hint-color, #999999); font-size: 13px; margin-bottom: 16px; }
-label { display: block; font-size: 13px; margin: 12px 0 4px; }
+h2 { font-size: 21px; margin-bottom: 4px; }
+.hint { color: var(--tg-theme-hint-color, #999999); font-size: 15px; margin-bottom: 16px; }
+label { display: block; font-size: 14px; margin: 12px 0 4px; }
 input, select, textarea {
   width: 100%;
   box-sizing: border-box;
@@ -48,7 +48,7 @@ input, select, textarea {
   border: 1px solid var(--tg-theme-hint-color, #cccccc);
   background: var(--tg-theme-secondary-bg-color, #f5f5f5);
   color: var(--tg-theme-text-color, #000000);
-  font-size: 15px;
+  font-size: 16px;
 }
 textarea { font-family: inherit; resize: vertical; min-height: 120px; }
 .menu-option {
@@ -61,7 +61,7 @@ textarea { font-family: inherit; resize: vertical; min-height: 120px; }
   border-radius: 10px;
   padding: 14px;
   margin-top: 12px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 .menu-option .hint { margin: 4px 0 0; font-weight: 400; }
@@ -73,7 +73,7 @@ textarea { font-family: inherit; resize: vertical; min-height: 120px; }
    to the button that follows it while staying separated from whatever
    came before - proximity, not just wording, is what makes "this label
    belongs to this button" obvious at a glance. */
-.option-label { font-size: 13px; font-weight: 600; color: var(--tg-theme-hint-color, #999999); margin: 8px 0 6px; }
+.option-label { font-size: 14px; font-weight: 600; color: var(--tg-theme-hint-color, #999999); margin: 8px 0 6px; }
 .menu-option + .option-label { margin-top: 28px; }
 .option-label + .menu-option { margin-top: 6px; }
 .score-bar {
@@ -94,7 +94,7 @@ button {
   border-radius: 8px;
   background: var(--tg-theme-button-color, #2481cc);
   color: var(--tg-theme-button-text-color, #ffffff);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -120,7 +120,7 @@ button.back-btn {
   color: var(--tg-theme-text-color, #000000);
   padding: 10px 16px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   margin-top: 0;
 }
@@ -134,7 +134,7 @@ button.nav-chip {
   border: 1px solid var(--tg-theme-hint-color, #cccccc);
   border-radius: 16px;
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   margin-top: 0;
 }
@@ -159,7 +159,7 @@ button.nav-chip {
   border-radius: 8px;
   background: var(--tg-theme-button-color, #2481cc);
   color: var(--tg-theme-button-text-color, #ffffff);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 .spinner {
@@ -172,6 +172,19 @@ button.nav-chip {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+/* Inline spinner for a busy button (see setButtonBusy in core.js) - uses
+   currentColor so it matches whatever text color the button variant
+   (primary/secondary/danger) already has, no extra theming needed. */
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  opacity: 0.85;
+  animation: spin 0.6s linear infinite;
+}
 /* A large, unmissable loading state for steps that call out to the AI or
    a live search and take a few seconds - real user feedback that the
    small inline .hint version was easy to miss entirely (read as "the
@@ -188,7 +201,7 @@ button.nav-chip {
   padding: 24px;
 }
 .big-loader .spinner { width: 48px; height: 48px; margin: 0 0 16px; border-width: 4px; }
-.big-loader .big-loader-text { font-size: 15px; color: var(--tg-theme-text-color, #000000); }
+.big-loader .big-loader-text { font-size: 16px; color: var(--tg-theme-text-color, #000000); }
 .big-loader .big-loader-text .icon { width: 18px; height: 18px; }
 .qty-stepper { display: flex; align-items: stretch; gap: 8px; margin-top: 12px; }
 .qty-stepper input {
@@ -213,8 +226,8 @@ button.nav-chip {
   padding: 14px;
 }
 .card.clickable { cursor: pointer; }
-.card h3 { margin: 0 0 4px; font-size: 16px; }
-.card .company { color: var(--tg-theme-hint-color, #999999); font-size: 13px; margin-bottom: 8px; }
+.card h3 { margin: 0 0 4px; font-size: 18px; }
+.card .company { color: var(--tg-theme-hint-color, #999999); font-size: 14px; margin-bottom: 8px; }
 /* Caps a vacancy card's summary at 5 lines - real feedback that a long
    posting pushed the actual action buttons too far down the screen. The
    full text is still one tap away via "Open"/"Copy". */
@@ -228,15 +241,15 @@ button.nav-chip {
 .file-picker { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .file-picker .hint { margin-bottom: 0; }
 .card.active-cv { border-color: #2e9e44; }
-.active-cv-badge { color: #2e9e44; font-weight: 600; font-size: 13px; }
-.error { color: #d33; font-size: 14px; }
+.active-cv-badge { color: #2e9e44; font-weight: 600; font-size: 14px; }
+.error { color: #d33; font-size: 15px; }
 .chip {
   display: inline-block;
   border: 1px solid var(--tg-theme-hint-color, #cccccc);
   border-radius: 20px;
   padding: 8px 14px;
   margin: 4px 4px 0 0;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   background: var(--tg-theme-secondary-bg-color, #f5f5f5);
 }
@@ -249,7 +262,7 @@ button.nav-chip {
   padding: 10px 12px;
   margin-bottom: 12px;
 }
-.selected-title b { font-size: 15px; }
+.selected-title b { font-size: 16px; }
 /* A visually distinct, more noticeable block for questions/prompts -
    these were plain small .hint text before and easy to miss */
 .prompt-block {
@@ -257,7 +270,7 @@ button.nav-chip {
   border-radius: 10px;
   padding: 12px 14px;
   margin-top: 16px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 .nav-row {
@@ -266,8 +279,8 @@ button.nav-chip {
   align-items: center;
   margin-top: 10px;
 }
-.nav-row button { width: auto; margin-top: 0; padding: 8px 14px; font-size: 14px; }
-.nav-counter { color: var(--tg-theme-hint-color, #999999); font-size: 13px; }
+.nav-row button { width: auto; margin-top: 0; padding: 8px 14px; font-size: 15px; }
+.nav-counter { color: var(--tg-theme-hint-color, #999999); font-size: 14px; }
 .screen-header {
   display: flex;
   justify-content: space-between;
@@ -276,7 +289,7 @@ button.nav-chip {
 }
 .screen-header .hint { margin: 0; }
 .controls-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.controls-row select { font-size: 13px; padding: 8px; }
+.controls-row select { font-size: 16px; padding: 8px; }
 [hidden] { display: none !important; }
 input[type="file"] { border: none; padding: 8px 0; background: none; }
 /* Icon set (icons.js) replacing emoji in labels/messages - real user

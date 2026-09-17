@@ -260,3 +260,24 @@ function bigLoader(iconName, text) {
     </div>
   `;
 }
+
+// Puts a spinner + text directly on the button that was tapped, not just
+// in the result area below it - real feedback that disabling the button
+// (just a 50% opacity dim) wasn't a strong enough signal on its own:
+// people kept tapping it, thinking the tap hadn't registered, while the
+// backend was already working. Call clearButtonBusy in a `finally` so the
+// button's original label comes back on both success and failure.
+function setButtonBusy(btn, text) {
+  if (btn.dataset.originalHtml === undefined) btn.dataset.originalHtml = btn.innerHTML;
+  btn.innerHTML = `<span class="btn-spinner"></span>${escapeHtml(text)}`;
+  btn.classList.add("icon-row");
+  btn.disabled = true;
+}
+
+function clearButtonBusy(btn) {
+  btn.disabled = false;
+  if (btn.dataset.originalHtml !== undefined) {
+    btn.innerHTML = btn.dataset.originalHtml;
+    delete btn.dataset.originalHtml;
+  }
+}

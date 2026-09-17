@@ -123,7 +123,7 @@ async function search() {
     return;
   }
 
-  btn.disabled = true;
+  setButtonBusy(btn, t("please_wait"));
   resultEl.innerHTML = bigLoader(null, t("searching_message", { title: state.jobTitle, location: location }));
   scrollToBottom();
 

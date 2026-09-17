@@ -245,6 +245,11 @@ const I18N = {
     uz: "Ulanib bo'lmadi — internet aloqangizni tekshiring va qaytadan urinib ko'ring.",
     ru: "Не удалось подключиться — проверьте интернет-соединение и попробуйте снова.",
   },
+  // Short label for a button's own busy state (setButtonBusy in core.js) -
+  // deliberately generic and short so it never wraps to multiple lines on
+  // the button itself; the full context-specific message still shows in
+  // the bigLoader below it.
+  please_wait: { en: "Please wait…", uz: "Iltimos, kuting…", ru: "Пожалуйста, подождите…" },
   err_session_expired: {
     en: "Your session expired — close this and reopen it from the bot.",
     uz: "Sessiya muddati tugadi — buni yoping va botdan qaytadan oching.",

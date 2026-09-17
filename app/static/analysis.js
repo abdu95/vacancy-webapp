@@ -13,8 +13,8 @@ async function analyzeCV() {
     return;
   }
 
-  btn.disabled = true;
   const analyzingKey = looksLikeUrl(jd) ? "analyzing_link_message_web" : "analyzing_message_web";
+  setButtonBusy(btn, t("please_wait"));
   resultEl.innerHTML = bigLoader(KEY_ICON[analyzingKey], t(analyzingKey));
   // Scroll as soon as the loader appears, not just once the result comes
   // back - real feedback that a loader placed below the fold with no
@@ -43,7 +43,7 @@ async function analyzeCV() {
     console.error("Analysis failed:", err);
     resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("analysis_failed_web"))))}</div>`;
   } finally {
-    btn.disabled = false;
+    clearButtonBusy(btn);
   }
 }
 
