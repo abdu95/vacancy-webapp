@@ -8,9 +8,16 @@ const I18N = {
     ru: "Откройте это через Telegram-бота, а не в обычном браузере.",
   },
   cv_gate_hint: {
-    en: "Upload your CV so I can search and score vacancies against it.",
-    uz: "Vakansiyalarni qidirish va CV'ingizni ular bilan solishtirish uchun CV yuklang.",
-    ru: "Загрузите резюме, чтобы я мог искать вакансии и сравнивать их с вашим резюме.",
+    en: "Recruiters spend about 7 seconds scanning a CV — good candidates often get "
+      + "filtered out by fixable issues, not real experience gaps. Upload yours so I "
+      + "can search and score vacancies against it.",
+    uz: "Ish beruvchilar CV'ga o'rtacha 7 soniya vaqt ajratishadi — ko'plab munosib "
+      + "nomzodlar tuzatsa bo'ladigan muammolar tufayli chetlab o'tiladi, aslida tajriba "
+      + "yetishmasligi tufayli emas. Vakansiyalarni qidirish va ular bilan solishtirish "
+      + "uchun CV'ingizni yuklang.",
+    ru: "Рекрутёры в среднем тратят на просмотр резюме около 7 секунд — многие "
+      + "достойные кандидаты отсеиваются из-за исправимых проблем, а не из-за нехватки "
+      + "опыта. Загрузите резюме, чтобы я мог искать вакансии и сравнивать их с ним.",
   },
   cv_file_label: { en: "CV (PDF or DOCX)", uz: "CV (PDF yoki DOCX)", ru: "Резюме (PDF или DOCX)" },
   upload_cv_btn: { en: "Upload CV", uz: "CV yuklash", ru: "Загрузить резюме" },
