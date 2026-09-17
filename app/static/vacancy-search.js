@@ -155,7 +155,7 @@ async function search() {
     console.error("Search error:", err);
     resultEl.innerHTML = `<div class="error icon-row-top">${iconRow("alert-triangle", escapeHtml(friendlyError(err, t("search_failed"))))}</div>`;
   } finally {
-    btn.disabled = false;
+    clearButtonBusy(btn);
   }
 }
 

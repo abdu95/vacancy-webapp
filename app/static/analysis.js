@@ -114,15 +114,20 @@ function roadmapTotalFor(level) {
 function startRoadmap() {
   // Disabled permanently, not just during this load - clicking it again
   // once the roadmap has started would only ever wipe cached progress
-  // (state.roadmapItems reset to []), never help. Not re-enabled anywhere.
+  // (state.roadmapItems reset to []), never help. Not re-enabled anywhere -
+  // the spinner just comes off (and the original label comes back) once
+  // the first item settles, success or failure, so the button doesn't
+  // stay frozen mid-"loading" forever if item 1 fails.
   const btn = document.getElementById("get_roadmap_btn");
-  if (btn) btn.disabled = true;
+  if (btn) setButtonBusy(btn, t("please_wait"));
   state.roadmapItems = [];
   state.roadmapIndex = -1;
   state.roadmapRequestSeq = (state.roadmapRequestSeq || 0) + 1;
   state.roadmapPrefetch = {};
   document.getElementById("roadmap-area").innerHTML = "";
-  loadRoadmapItem(1);
+  loadRoadmapItem(1).finally(() => {
+    if (btn) { clearButtonBusy(btn); btn.disabled = true; }
+  });
 }
 
 // Prefetches the item after the one currently on screen, so by the time a
