@@ -408,19 +408,19 @@ ROADMAP_BLOCKS = {
         3: {"title": "Stepping-Stone Roles", "prompt": ROADMAP_PRE_JUNIOR_ITEM3},
     },
     "Junior": {
-        1: {"title": "CV Fixes", "prompt": ROADMAP_JUNIOR_ITEM1, "max_tokens": 900},
+        1: {"title": "CV Fixes", "prompt": ROADMAP_JUNIOR_ITEM1, "max_tokens": 1500},
         2: {"title": "Phone Screen Prep", "prompt": ROADMAP_JUNIOR_ITEM2, "max_tokens": 350},
         3: {"title": "Technical Interview Prep", "prompt": ROADMAP_JUNIOR_ITEM3},
         4: {"title": "Target Companies", "prompt": ROADMAP_JUNIOR_ITEM4},
     },
     "Mid": {
-        1: {"title": "CV Fixes", "prompt": ROADMAP_MID_ITEM1, "max_tokens": 900},
+        1: {"title": "CV Fixes", "prompt": ROADMAP_MID_ITEM1, "max_tokens": 1500},
         2: {"title": "Phone Screen Prep", "prompt": ROADMAP_MID_ITEM2, "max_tokens": 350},
         3: {"title": "Technical Interview Prep", "prompt": ROADMAP_MID_ITEM3},
         4: {"title": "Target Companies", "prompt": ROADMAP_MID_ITEM4},
     },
     "Senior": {
-        1: {"title": "CV Fixes", "prompt": ROADMAP_SENIOR_ITEM1, "max_tokens": 900},
+        1: {"title": "CV Fixes", "prompt": ROADMAP_SENIOR_ITEM1, "max_tokens": 1500},
         2: {"title": "Phone Screen Prep", "prompt": ROADMAP_SENIOR_ITEM2, "max_tokens": 350},
         3: {"title": "Technical Interview Prep", "prompt": ROADMAP_SENIOR_ITEM3},
         4: {"title": "Target Companies", "prompt": ROADMAP_SENIOR_ITEM4},
