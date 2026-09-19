@@ -101,24 +101,42 @@ def _strip_html(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+# Seniority/generic-role words say little about *which* job it is - "Senior
+# Corporate Lawyer" shares "senior" with "Senior Finance Manager" and
+# nothing else that matters. Stripped before the overlap check so it's
+# decided by the words that actually name the field or role.
+_GENERIC_WORDS = {
+    "senior", "junior", "middle", "lead", "head", "chief", "principal", "intern",
+    "manager", "specialist", "engineer", "officer", "executive", "assistant",
+    "associate", "expert", "consultant", "of", "and", "the", "in", "at",
+}
+
+
 def _title_overlaps_query(query: str, title: str) -> bool:
-    """Deliberately lighter-touch than greenhouse_source's own
-    _title_match_tier (word length > 2, best-tier-only): hh's search
-    already ranks by relevance server-side against title+description, a
-    much better signal than Greenhouse's raw per-company listing, so this
-    only needs to catch the true zero-overlap case (a query term matched
-    purely from somewhere in the description, e.g. "Java" mentioned once
-    in a QA posting's tooling list) - not re-rank or exclude a real
-    partial match. Real case caught 2026-09-09: "Java developer" returned
-    a "Software QA Engineer/Intern" posting with no title overlap at all.
+    """hh's search already ranks by relevance server-side against
+    title+description, so this only screens out titles that matched purely
+    from somewhere in the description. Two real cases:
+    2026-09-09 "Java developer" returned "Software QA Engineer/Intern"
+    (zero title overlap). 2026-09-19 "Corporate Finance Manager" returned
+    "Senior Corporate Lawyer" - one shared word out of two was enough to
+    pass an any-word check, though the field is entirely different.
+    So: drop generic/seniority words, then require ALL remaining words to
+    appear in the title when there are 1-2 of them, or all but one when
+    there are 3+ (long titles often carry a qualifier a posting omits).
+    A query made only of generic words falls back to any-word matching.
     Threshold is length >= 2 (not > 2, unlike greenhouse_source) - common
     tech acronyms like "QA", "BI", "ML" are exactly 2 characters and are
     real signal, not noise, in a title match."""
     words = [w for w in query.lower().split() if len(w) >= 2]
     if not words:
         return True
+    distinctive = [w for w in words if w not in _GENERIC_WORDS]
     title_lower = title.lower()
-    return any(re.search(rf"\b{re.escape(w)}\b", title_lower) for w in words)
+    if not distinctive:
+        return any(re.search(rf"\b{re.escape(w)}\b", title_lower) for w in words)
+    hits = sum(bool(re.search(rf"\b{re.escape(w)}\b", title_lower)) for w in distinctive)
+    needed = len(distinctive) if len(distinctive) <= 2 else len(distinctive) - 1
+    return hits >= needed
 
 
 def _build_summary(snippet: dict) -> str:

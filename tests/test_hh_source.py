@@ -163,4 +163,24 @@ with mock.patch.object(hh_source, "_fetch_items", new=mock.AsyncMock(return_valu
     )
 print("PASS: excludes a title with zero real overlap with the query, without dropping genuine short-acronym matches")
 
+# --- Test 7: real bug (2026-09-19) - "Corporate Finance Manager" returned
+# "Senior Corporate Lawyer": one shared word ("corporate") out of two was
+# enough. Every distinctive word must now match (generic words like
+# senior/manager don't count). ---
+finance_items = [
+    {"name": "Senior Corporate Lawyer", "employer": {"name": "LAVOROSOLUTIONS"},
+     "area": {"name": "Ташкент"}, "alternateUrl": "https://hh.ru/vacancy/4", "snippet": {}},
+    {"name": "Corporate Finance Manager", "employer": {"name": "Uzum Bank"},
+     "area": {"name": "Ташкент"}, "alternateUrl": "https://hh.ru/vacancy/5", "snippet": {}},
+    {"name": "Senior Finance Analyst", "employer": {"name": "Other Co"},
+     "area": {"name": "Ташкент"}, "alternateUrl": "https://hh.ru/vacancy/6", "snippet": {}},
+]
+with mock.patch.object(hh_source, "_fetch_items", new=mock.AsyncMock(return_value=finance_items)):
+    results = asyncio.run(hh_source.search_vacancies("Corporate Finance Manager", "Uzbekistan", "Any", "Any"))
+    assert [r["company"] for r in results] == ["Uzum Bank"], [r["company"] for r in results]
+    results = asyncio.run(hh_source.search_vacancies("Senior Finance Manager", "Uzbekistan", "Any", "Any"))
+    assert "LAVOROSOLUTIONS" not in [r["company"] for r in results]
+    assert {"Uzum Bank", "Other Co"} <= {r["company"] for r in results}
+print("PASS: a title sharing only one of two distinctive query words is excluded")
+
 print("\nALL HH_SOURCE CHECKS PASSED")
