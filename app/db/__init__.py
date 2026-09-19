@@ -22,7 +22,7 @@ module object.
 import time
 
 from app.db.pool import get_pool
-from app.db.users import FREE_LIMIT, ensure_user, get_quota_status, get_user_language, increment_usage_count
+from app.db.users import FREE_LIMIT, ensure_user, get_quota_status, get_user_language, get_user_name, increment_usage_count
 from app.db.cvs import add_cv, delete_cv, get_active_cv_text, list_cvs, set_active_cv
 from app.db.applications import (
     VALID_STATUSES,
@@ -45,7 +45,7 @@ from app.db.events import log_event
 
 __all__ = [
     "get_pool",
-    "FREE_LIMIT", "ensure_user", "get_quota_status", "get_user_language", "increment_usage_count",
+    "FREE_LIMIT", "ensure_user", "get_quota_status", "get_user_language", "get_user_name", "increment_usage_count",
     "add_cv", "delete_cv", "get_active_cv_text", "list_cvs", "set_active_cv",
     "VALID_STATUSES", "delete_application", "list_applications", "save_application", "update_application_status",
     "delete_analysis", "get_analysis", "list_analyses", "save_analysis", "save_roadmap_item",

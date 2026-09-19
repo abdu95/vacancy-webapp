@@ -53,6 +53,22 @@ def get_user_language(telegram_id: int) -> str:
         pool.putconn(conn)
 
 
+def get_user_name(telegram_id: int) -> str | None:
+    """The name the user typed when the bot asked for it. Preferred over
+    Telegram's first_name (initData.user), which is whatever the profile
+    happens to say - often a nickname or handle the user didn't choose to
+    be addressed by. None if they never gave one (e.g. Mini App only)."""
+    pool = db.get_pool()
+    conn = pool.getconn()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("SELECT name FROM users WHERE telegram_id = %s", (telegram_id,))
+            row = cur.fetchone()
+            return row[0] if row and row[0] else None
+    finally:
+        pool.putconn(conn)
+
+
 def get_quota_status(telegram_id: int) -> tuple[int, int]:
     """Returns (usage_count, effective_quota), mirroring bot/state.py's
     get_quota_override + bot/bot.py's effective_quota exactly - a real

@@ -22,7 +22,7 @@ async def cv_status(req: CVStatusRequest):
     user = authenticate(req.init_data)
     cv_text = db.get_active_cv_text(user["id"])
     lang = db.get_user_language(user["id"])
-    return {"has_cv": bool(cv_text), "lang": lang}
+    return {"has_cv": bool(cv_text), "lang": lang, "name": db.get_user_name(user["id"])}
 
 
 @router.post("/api/upload-cv")

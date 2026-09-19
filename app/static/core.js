@@ -162,9 +162,11 @@ async function checkCVAndRoute() {
     applyStaticTranslations();
     state.hasCv = data.has_cv;
 
-    const userInfo = tg.initDataUnsafe?.user;
-    if (userInfo) {
-      document.getElementById("greeting").textContent = t("greeting", { name: userInfo.first_name });
+    // Prefer the name the user gave the bot; Telegram's first_name is
+    // only a fallback for users who never went through the bot's name step.
+    const greetingName = data.name || tg.initDataUnsafe?.user?.first_name;
+    if (greetingName) {
+      document.getElementById("greeting").textContent = t("greeting", { name: greetingName });
     }
 
     showScreen(data.has_cv ? "home-screen" : "welcome-screen");
