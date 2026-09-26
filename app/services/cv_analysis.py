@@ -17,7 +17,13 @@ import anthropic
 from dotenv import load_dotenv
 
 from app.prompts.analysis import ANALYSIS_PROMPT, ROADMAP_BLOCKS
-from app.services.ai_utils import cv_jd_content_blocks, extract_json, verify_keywords, with_language
+from app.services.ai_utils import (
+    cv_jd_content_blocks,
+    extract_json,
+    verify_keywords,
+    with_language,
+    with_language_for_fixes,
+)
 
 load_dotenv()
 
@@ -26,8 +32,17 @@ MODEL = "claude-sonnet-4-5"
 
 
 async def analyze_cv(jd: str, cv_text: str, language: str = "en") -> dict:
-    """Full analysis: ats, xyz, tools, level."""
-    prompt = with_language(ANALYSIS_PROMPT, language)
+    """Full analysis: ats, xyz, tools, level.
+
+    Uses with_language_for_fixes(), not the plain with_language(), because
+    xyz.rewrites pairs an "original" CV quote with an "improved" rewrite -
+    the same before/after quote-pairing this schema shares with
+    cv_fixes.py's, so it needs the same original-language-matching
+    treatment (see with_language_for_fixes()'s docstring) rather than
+    having "improved" forced into the UI language regardless of what
+    language "original" is actually quoted in.
+    """
+    prompt = with_language_for_fixes(ANALYSIS_PROMPT, language)
     response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=2000,
@@ -55,7 +70,7 @@ async def generate_cv_fixes(level: str, jd: str, cv_text: str, language: str = "
     """Generate the Top-5 CV fixes as structured data (item 1 of the roadmap)."""
     blocks = ROADMAP_BLOCKS.get(level, ROADMAP_BLOCKS["Junior"])
     block = blocks[1]
-    prompt = with_language(block["prompt"], language)
+    prompt = with_language_for_fixes(block["prompt"], language)
     response = await client.beta.prompt_caching.messages.create(
         model=MODEL,
         max_tokens=block.get("max_tokens", 900),

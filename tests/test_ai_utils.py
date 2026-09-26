@@ -16,7 +16,13 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.services.ai_utils import cv_jd_content_blocks, extract_json, verify_keywords, with_language  # noqa: E402
+from app.services.ai_utils import (  # noqa: E402
+    cv_jd_content_blocks,
+    extract_json,
+    verify_keywords,
+    with_language,
+    with_language_for_fixes,
+)
 
 # --- cv_jd_content_blocks ---
 
@@ -53,6 +59,30 @@ assert ru_prompt != en_prompt and "Russian" in ru_prompt and ru_prompt.startswit
 uz_prompt = with_language("PROMPT", "uz")
 assert uz_prompt != en_prompt and "Uzbek" in uz_prompt
 print("PASS: with_language always appends the JD instruction, is otherwise a no-op for English/unknown codes, and appends a real language instruction for ru/uz")
+
+# --- with_language_for_fixes ---
+
+# Real bug (reported 2026-09-26): a Russian-UI user's CV fix showed an
+# English "before" quote next to a forced-Russian "after" rewrite - mixed
+# languages inside one before/after pair. with_language_for_fixes() must
+# never tell the model to force the rewritten half of a before/after (or
+# original/improved) pair into the UI language - it should follow the
+# quoted original's own language instead.
+en_fix_prompt = with_language_for_fixes("PROMPT", "en")
+assert en_fix_prompt.startswith("PROMPT") and "JD" in en_fix_prompt and "job description" in en_fix_prompt
+
+ru_fix_prompt = with_language_for_fixes("PROMPT", "ru")
+assert "Russian" in ru_fix_prompt, "issue/verdict/reasoning must still follow the UI language"
+assert "same language" in ru_fix_prompt.lower(), "before/after (or original/improved) must be told to match each other's language"
+assert "never" in ru_fix_prompt.lower() and "before" in ru_fix_prompt.lower(), "must instruct never to translate the before/original quote"
+# The old with_language() forced "after" into the UI language unconditionally
+# via one shared sentence covering every free-text field - the fixed variant
+# must NOT reuse that same blanket instruction for after/improved.
+assert "issue/after" not in ru_fix_prompt, "must not reuse with_language()'s old blanket after-in-UI-language instruction"
+
+none_fix_prompt = with_language_for_fixes("PROMPT", None)
+assert "Russian" not in none_fix_prompt and "Uzbek" not in none_fix_prompt, "no language code should behave like English"
+print("PASS: with_language_for_fixes keeps issue/verdict in the UI language but keeps before/after (or original/improved) pairs in the CV's own language, not forced into the UI language")
 
 # --- extract_json ---
 

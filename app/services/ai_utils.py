@@ -60,6 +60,51 @@ def with_language(prompt: str, language: str | None) -> str:
     )
 
 
+def with_language_for_fixes(prompt: str, language: str | None) -> str:
+    """Variant of with_language() for schemas that pair a verbatim CV quote
+    with a rewritten version of it: cv_fixes.py's and cv_analysis.py's
+    generate_cv_fixes() ("before"/"after" keys) and analyze_cv()'s XYZ
+    rewrites ("original"/"improved" keys).
+
+    with_language() forces every free-text field - including the rewritten
+    half of these pairs - into the user's UI language. That's wrong here:
+    real user feedback (screenshot, 2026-09-26) showed a Russian-UI user
+    whose actual CV bullet is in English getting an English "before" quote
+    sitting right above a forced-Russian "after" rewrite - mixed languages
+    inside what's meant to read as one matched pair. Here, only the
+    explanatory fields (issue/verdict/reasoning) follow the UI
+    language; the rewritten half of a quote pair instead follows whatever
+    language the quoted original/before is already in, so before/after
+    (or original/improved) always match each other, not the UI language.
+    """
+    prompt = prompt + (
+        "\n\nNever use the abbreviation \"JD\" anywhere in your output text - "
+        "say \"the job description\" or name the actual role instead. JD is "
+        "internal shorthand only, not something a candidate reading your "
+        "output would recognize."
+    )
+    name = _LANGUAGE_NAMES.get(language)
+    explain_in = f" in {name}" if name else ""
+    return prompt + (
+        f"\n\nWrite explanatory free-text fields (\"issue\", \"verdict\", "
+        f"\"reasoning\", or other prose commentary){explain_in}. Keep JSON "
+        f"keys and any fixed control values (like strong/mentioned/"
+        f"not_found) in English exactly as specified above.\n\n"
+        f"For \"before\"/\"original\" and \"after\"/\"improved\" pairs: "
+        f"never translate or rewrite the \"before\"/\"original\" field - "
+        f"copy that CV bullet exactly as it appears, in whatever language "
+        f"it's actually written in. Write the matching \"after\"/\"improved\" "
+        f"field in THE SAME LANGUAGE as its \"before\"/\"original\" "
+        f"counterpart (the CV's own language for that bullet) - NOT "
+        f"necessarily the language above - so the pair always reads as one "
+        f"natural rewrite rather than mixing languages mid-pair. Only when "
+        f"there is no \"before\"/\"original\" text to match (a wholly new "
+        f"bullet being added, not a rewrite) should \"after\"/\"improved\" "
+        f"fall back to whichever language the candidate's CV is "
+        f"predominantly written in."
+    )
+
+
 def cv_jd_content_blocks(cv_text: str, jd_text: str, prompt: str) -> list[dict]:
     """Builds two-block message content for Anthropic's prompt caching:
     the CV+JD prefix (identical across every call in a session - the
