@@ -350,6 +350,20 @@ real CVs, so it never goes in a repo or a shared folder.
   and Sign out. Out of checks shows Join waitlist.
 - ☐ Desktop layout: center the app in a column about 520px wide.
 
+### Status (2026-10-19): built, on staging, awaiting a manual Google sign-in
+- ☑ 2.1: Google Cloud project `Chashma` (owner chashmauz1@gmail.com, backup owner abdumalik2014@gmail.com),
+  status Testing. Client ID `744726951069-2dbrgn8se03bg26086o9cr2ijjn8rcb3.apps.googleusercontent.com`
+  (public). Origins: localhost, localhost:8000, the staging URL. `GOOGLE_CLIENT_ID` is set on staging only.
+- ☑ 2.2: `ae-coach-bot` `c093238`, `schema.migrate_web_accounts()`. **Change from the plan:** `email` is
+  *not* unique. `google_sub` is the identity, and an address can move between Google accounts.
+  No `SESSION_SECRET` is needed: sessions are random tokens with only their hash stored in `web_sessions`.
+- ☑ 2.3 and 2.4: `vacancy-webapp` `23b06e8`. Every route takes `request` and `authenticate(init_data, request)`.
+  The first-load gate is `core.js` `IS_WEB` plus `web.js`.
+- ☑ Tests: `tests/integration/test_web_auth_real_postgres.py`, `tests/js/web.test.js` (it caught the new
+  screens missing from `ALL_SCREENS`), all suites green. On staging: endpoints probed (401, 403, bad
+  token rejected), the Telegram smoke test passes, and a headless browser shows the sign-in screen with Google's button.
+- ☐ Manual Google sign-in on staging, then the prod rollout (see the checklist below).
+
 ### Tests for Phase 2
 Automated (`tests/test_web_auth.py`, with Google's verifier mocked):
 - ☐ Valid token → user created (`telegram_id NULL`, quota 10) and the cookie is set.
