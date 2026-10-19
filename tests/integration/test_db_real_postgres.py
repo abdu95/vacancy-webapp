@@ -50,6 +50,7 @@ with psycopg2.connect(DSN) as conn, conn.cursor() as cur:
     bot_schema.migrate_legacy_state(cur)
     bot_schema.migrate_legacy_cv_text(cur)
     bot_schema.migrate_internal_user_id(cur)
+    bot_schema.contract_internal_user_id(cur)
 
 TOKEN = "123456:integration-test-token"
 os.environ.update(DATABASE_URL=DSN, TELEGRAM_TOKEN=TOKEN, ANTHROPIC_API_KEY="dummy")
