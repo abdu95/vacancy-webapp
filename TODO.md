@@ -44,6 +44,11 @@ Deferred from the web launch plan (docs/web-launch-plan.md, 2026-10-19).
       then web users get 10 free checks, then Join waitlist.
 - [ ] **Drop legacy `telegram_id` columns** from child tables (cvs, applications,
       cv_analyses, alerted_vacancies, events, orders) once Phase 1 has been stable for a few weeks.
+      Same cleanup: drop the `trg_*_fill_user_id` triggers and their function, the
+      `telegram_id` versions of the uniqueness rules (`idx_cvs_one_active_per_user`,
+      `alerted_vacancies_telegram_id_vacancy_url_key`), the bot's second `telegram_id` write
+      in events/orders inserts, the legacy CV backfill's `telegram_id` insert, and
+      payme-webhook's dead "order without user_id" fallback in credit_user/reverse_credit.
 - [ ] **Rebrand the Telegram Mini App and bot from "Accepted AI" to "Chashma"**: bot
       messages (`ae-coach-bot/bot/i18n.py`), Mini App strings (`app/static/i18n.js`),
       BotFather name/description. The website and app.chashma.uz are rebranded as part of

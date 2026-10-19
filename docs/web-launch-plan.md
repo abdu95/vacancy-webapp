@@ -240,6 +240,49 @@ Tests:
 - ☐ Rerun the full Phase 0.6 suite plus the Phase 0.4 counts on staging, then prod.
 - ☐ For 3 days after the prod deploy, check Railway logs for SQL errors and the counts once a day.
 
+**As built** (`ae-coach-bot` `91b6282`, `schema.contract_internal_user_id()`, run after
+`migrate_internal_user_id()` in `init_db`). Differences from the list above:
+- **Triggers kept.** They still link rows from code that writes `telegram_id` only (the legacy
+  CV backfill). They get dropped together with the child `telegram_id` columns (TODO.md).
+- **Orphan rule.** An event or order for a Telegram id with no users row now gets a bare
+  `backfill_orphan` user from the trigger, so it isn't a NOT NULL error inside a handler.
+  Other tables still reject unknown users.
+- `idx_cvs_one_active_per_user_id` already existed from step 1.3. The `telegram_id` versions
+  of the uniqueness rules stay until the column is dropped.
+- `migrate_legacy_cv_text` now uses `NOT EXISTS`. The `users.id` unique index is only created
+  when none exists: `PRIMARY KEY USING INDEX` renames it to `users_pkey`, so otherwise every
+  restart would add a duplicate.
+- payme-webhook's "order without user_id" fallback is now dead code, since the DB rejects such
+  orders. Remove it during the column-drop cleanup.
+
+Status (2026-10-19): ☑ `test_user_id_contract.py` (browser-style user with no telegram_id, FK
+enforcement, telegram_id upserts, orphan rule, legacy backfill, re-runs), mutation-checked.
+All suites pass in all three repos. ☑ Staging: PK on `id`, `UNIQUE (telegram_id)`, 6 user_id FKs,
+0 old FKs, 1 index on `users.id`, counts unchanged; `smoke.js` and `smoke-payment.js` pass.
+☐ Prod.
+
+Rollback, only valid while every user still has a `telegram_id` (i.e. before Phase 2 creates
+browser users). Revert `91b6282` first, or the next restart re-applies it:
+```sql
+BEGIN;
+DO $$ DECLARE t text; BEGIN
+  FOREACH t IN ARRAY ARRAY['cvs','applications','cv_analyses','alerted_vacancies','events','orders'] LOOP
+    EXECUTE format('ALTER TABLE %I DROP CONSTRAINT IF EXISTS %I', t, t || '_user_id_fkey');
+    EXECUTE format('ALTER TABLE %I ALTER COLUMN user_id DROP NOT NULL', t);
+    EXECUTE format('ALTER TABLE %I ALTER COLUMN telegram_id SET NOT NULL', t);
+  END LOOP; END $$;
+ALTER TABLE users DROP CONSTRAINT users_pkey;              -- drops the index on id too
+ALTER TABLE users ALTER COLUMN telegram_id SET NOT NULL;
+ALTER TABLE users DROP CONSTRAINT users_telegram_id_key;
+ALTER TABLE users ADD PRIMARY KEY (telegram_id);
+CREATE UNIQUE INDEX users_id_key ON users (id);
+ALTER TABLE cvs ADD CONSTRAINT cvs_telegram_id_fkey FOREIGN KEY (telegram_id) REFERENCES users(telegram_id);
+ALTER TABLE applications ADD CONSTRAINT applications_telegram_id_fkey FOREIGN KEY (telegram_id) REFERENCES users(telegram_id);
+ALTER TABLE cv_analyses ADD CONSTRAINT cv_analyses_telegram_id_fkey FOREIGN KEY (telegram_id) REFERENCES users(telegram_id);
+ALTER TABLE alerted_vacancies ADD CONSTRAINT alerted_vacancies_telegram_id_fkey FOREIGN KEY (telegram_id) REFERENCES users(telegram_id);
+COMMIT;
+```
+
 Before every prod step: take a backup. Railway's built-in backups need the Pro plan, so make one ourselves:
 ```bash
 B="$HOME/Mac files/My Projects/ae coach bot/chashma-backups"; mkdir -p "$B" && chmod 700 "$B" && umask 077
