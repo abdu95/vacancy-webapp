@@ -12,6 +12,17 @@ Deferred from the web launch plan (docs/web-launch-plan.md, 2026-10-19).
         mixed-language CV-fix bug, fixed in `821dfc2`). This is probably accidental, so
         `git checkout tests/test_ai_utils.py` is likely the right move.
 
+- [ ] **Stop logging the bot token (security).** The prod bot's Railway logs print the
+      full Telegram token on every poll (`httpx` logs each `POST .../bot<TOKEN>/getUpdates`
+      URL at INFO). Anyone who can read the logs can control the bot. Fix:
+      `logging.getLogger("httpx").setLevel(logging.WARNING)` in `ae-coach-bot/bot/bot.py`,
+      then rotate the token in BotFather (`/revoke`) and update `TELEGRAM_TOKEN` in
+      ae-coach-bot and vacancy-webapp and `BOT_TOKEN` in payme-webhook.
+- [ ] **Prod vacancy-webapp `DATABASE_URL` is a hard-coded literal** (the other services
+      use `${{Postgres.DATABASE_URL}}`). Switch it to the reference so a password rotation
+      or environment copy can't leave it pointing at the wrong database. Staging already uses the reference.
+- [ ] **Staging deploy branch.** Staging currently deploys from the same branches as prod
+      (main/master). Consider a `staging` branch so changes land there first.
 - [ ] **Email channel for web users.** Provider (Resend/Postmark), SPF/DKIM/DMARC on
       the domain, one-click unsubscribe + `List-Unsubscribe` header. Vacancy alerts
       route by channel (Telegram if `telegram_id`, else email). Then un-hide Vacancy

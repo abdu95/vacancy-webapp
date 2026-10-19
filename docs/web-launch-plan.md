@@ -17,7 +17,15 @@ Status key: ☐ todo · ☑ done
 
 ## Phase 0: Safety net (before touching the schema)
 
-1. ☐ **Staging environment on Railway.** Duplicate the project's environment (bot,
+1. ☑ **Staging environment on Railway**, created 2026-10-19 as a duplicate of production with
+   these overrides: `TELEGRAM_TOKEN`/`BOT_TOKEN` set to a placeholder until the `@chashma_stage_bot`
+   token is pasted in, `BOT_USERNAME=chashma_stage_bot`, `VACANCY_ALERTS_ENABLED=0`,
+   `PAYME_KEY=disabled-in-staging`, the webapp's `DATABASE_URL` set to `${{Postgres.DATABASE_URL}}`
+   (prod's is a hard-coded literal), and the bot's `MINI_APP_URL` set to
+   `https://vacancy-webapp-staging.up.railway.app`. Payme sandbox is at
+   `https://payme-webhook-staging.up.railway.app`. Both environments deploy from the same
+   branches, so every push deploys to staging too.
+   Original instructions: Duplicate the project's environment (bot,
    webapp, payme-webhook, Postgres) as `staging`. Point a test Telegram bot at the
    staging webapp so the Mini App can be tested without touching prod.
    ⚠ Before the staging bot starts, create a **separate test bot in BotFather** and put
@@ -26,7 +34,12 @@ Status key: ☐ todo · ☑ done
    Staging's payme-webhook uses only `PAYME_TEST_KEY`.
    ⚠ Staging's database is a copy of prod, so it contains real users' Telegram IDs.
    The daily vacancy-alerts loop must be **off** in staging, or it messages real people.
-2. ☐ **Restore a prod copy into staging Postgres.** Run `pg_dump` on prod, then
+2. ☑ **Restore a prod copy into staging Postgres.** Done 2026-10-19, and staging's row counts equal prod's.
+   How: `railway ssh -s Postgres -e production -- 'pg_dump -U "$POSTGRES_USER" -d "$PGDATABASE" --clean --if-exists --no-owner --no-privileges' > prod.sql`,
+   then strip the `payme_credentials` rows (a row there overrides `PAYME_KEY`, so it would put
+   the live key into staging), then pipe into `railway ssh -s Postgres -e staging -- 'psql ... -v ON_ERROR_STOP=1 --single-transaction'`
+   with an environment-name guard. Delete the local dump afterwards, since it has real CVs.
+   Original instructions: Run `pg_dump` on prod, then
    `pg_restore` into staging. Every migration step is rehearsed here first.
 3. ☑ **Record the live `orders` schema.** Done 2026-10-19: `orders` and `payme_transactions`
    were created by hand in prod and are now declared in `schema.py` exactly as they are live
