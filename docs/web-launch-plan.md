@@ -145,7 +145,7 @@ All statements are idempotent (`IF NOT EXISTS`), because `init_db` runs on every
 - ☑ Staging (prod copy): 0 unlinked rows in all 6 tables, counts unchanged, orphan 99999003
   backfilled, and the migrated schema is identical to a fresh `init_db()`. `smoke.js` and
   `smoke-payment.js` pass against staging, and the new test user and sandbox order were auto-linked.
-- ☐ Prod backup, then push, then rerun the checks on prod, then re-capture `prod_schema.json`.
+- ☑ Prod (2026-10-19 13:51 UTC): self-made backup `~/chashma-backups/prod-before-step-1.2-20261019T1350Z.sql`, test-restored locally with row counts identical to prod. Pushed. On prod: 0 unlinked rows in all 6 tables, counts unchanged, users 217→218 (orphan placeholder), health 200, smoke.js passes. `prod_schema.json` re-captured.
 
 Rollback (additive, so it's safe to run while the old code is live):
 ```sql
@@ -217,7 +217,14 @@ Tests:
 - ☐ Rerun the full Phase 0.6 suite plus the Phase 0.4 counts on staging, then prod.
 - ☐ For 3 days after the prod deploy, check Railway logs for SQL errors and the counts once a day.
 
-Before every prod step: take a Railway Postgres backup or `pg_dump`.
+Before every prod step: take a backup. Railway's built-in backups need the Pro plan, so make one ourselves:
+```bash
+mkdir -p ~/chashma-backups && chmod 700 ~/chashma-backups && umask 077
+railway ssh -s Postgres -e production -- 'pg_dump -U "$POSTGRES_USER" -d "$PGDATABASE" --no-owner --no-privileges' \
+  > ~/chashma-backups/prod-before-<step>-$(date -u +%Y%m%dT%H%MZ).sql
+```
+Then test-restore it into a local scratch DB and compare row counts with prod. The file has
+real CVs, so it never goes in a repo or a shared folder.
 
 ---
 
