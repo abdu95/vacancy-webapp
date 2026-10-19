@@ -113,9 +113,17 @@ The rollout uses "expand, switch, contract" in three deploys, so the three servi
 keep working while each step lands.
 
 ### Step 1.1: Rename (code only, no behavior change)
-- ☐ In `ae-coach-bot`, rename variables and params that hold a Telegram ID from
-  `user_id` to `telegram_id`. Pure rename.
-- Test: all bot tests pass, plus a manual bot `/start` on staging.
+- ☑ In `ae-coach-bot`, rename variables and params that hold a Telegram ID from
+  `user_id` to `telegram_id`. Pure rename, done 2026-10-19 (`fb7d57e`): 48 lines in `bot.py`,
+  `state/session.py` and `state/accounts.py`. The SQL column `user_state.user_id` is untouched.
+- ☑ Tests: all bot tests pass, plus the new `integration/test_bot_db_functions.py` (real SQL
+  for get/reset/_save, waitlist, quota, source, events, orders), which passes identically before and after.
+- ☑ Manual `/start` + `/reset` on staging (2026-10-19): events logged, existing user row updated, no duplicate user. Pushed to prod.
+
+**Deploying to staging only.** Both environments deploy from the same branch on push, so to
+try code on staging first, upload the local tree:
+`railway up -p 3fd8cbee-097a-460a-8d24-fdf5cf5a8862 -e staging -s <service> --ci`
+(run it from that service's repo). Push to prod only after staging passes.
 
 ### Step 1.2: Expand (DB only, shipped from `ae-coach-bot/bot/state/schema.py`)
 All statements are idempotent (`IF NOT EXISTS`), because `init_db` runs on every startup.
