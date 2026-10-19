@@ -59,14 +59,15 @@ print("PASS: save_search_criteria writes job_title/location/alerts_enabled")
 
 # --- db.list_users_with_alerts_enabled ---
 
-pool, cursor = make_fake_pool(fetchall_result=[(1, "Data Analyst", "Tashkent"), (2, "BI Developer", None)])
+pool, cursor = make_fake_pool(fetchall_result=[(9001, 1, "Data Analyst", "Tashkent"), (9002, 2, "BI Developer", None)])
 with mock.patch.object(db, "get_pool", return_value=pool):
     result = db.list_users_with_alerts_enabled()
-    assert result == [(1, "Data Analyst", "Tashkent"), (2, "BI Developer", None)]
+    assert result == [(9001, 1, "Data Analyst", "Tashkent"), (9002, 2, "BI Developer", None)]
     query = cursor.execute.call_args[0][0]
     assert "vacancy_alerts_enabled = true" in query
     assert "saved_job_title IS NOT NULL" in query
-print("PASS: list_users_with_alerts_enabled queries opted-in users with a job title set")
+    assert "telegram_id IS NOT NULL" in query, "alerts are Telegram messages: skip users with no telegram_id"
+print("PASS: list_users_with_alerts_enabled queries opted-in Telegram users with a job title set")
 
 # --- db.filter_new_vacancy_urls / mark_vacancies_alerted ---
 
@@ -133,25 +134,26 @@ def _run(coro):
     return asyncio.run(coro)
 
 
-with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777, "Data Analyst", "Tashkent")]), \
+with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(9001, 777, "Data Analyst", "Tashkent")]), \
      mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(
          return_value=[{"title": "Data Analyst", "company": "Acme", "url": "https://a.com/1"}])), \
-     mock.patch.object(db, "filter_new_vacancy_urls", return_value=["https://a.com/1"]), \
+     mock.patch.object(db, "filter_new_vacancy_urls", return_value=["https://a.com/1"]) as m_filter, \
      mock.patch.object(vacancy_alerts, "_send_telegram_message", new=mock.AsyncMock()) as m_send, \
      mock.patch.object(db, "mark_vacancies_alerted") as m_mark:
     summary = _run(vacancy_alerts.run_vacancy_alerts())
     assert summary == {"users_checked": 1, "alerts_sent": 1, "failed": 0}, summary
     m_send.assert_called_once()
     send_args = m_send.call_args[0]
-    assert send_args[0] == 777
+    assert send_args[0] == 777, "the Telegram message goes to the Telegram id"
     batch_id = send_args[2]
+    assert m_filter.call_args[0][0] == 9001, "dedup is keyed by the internal user id"
     m_mark.assert_called_once_with(
-        777, [{"title": "Data Analyst", "company": "Acme", "url": "https://a.com/1"}],
+        9001, [{"title": "Data Analyst", "company": "Acme", "url": "https://a.com/1"}],
         batch_id, "Data Analyst", "Tashkent",
     )
-print("PASS: run_vacancy_alerts sends one digest and marks the sent vacancies under one batch_id")
+print("PASS: run_vacancy_alerts sends one digest (to the Telegram id) and marks it under the internal id")
 
-with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777, "Data Analyst", "Tashkent")]), \
+with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(9001, 777, "Data Analyst", "Tashkent")]), \
      mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(
          return_value=[{"title": "Data Analyst", "company": "Acme", "url": "https://a.com/1"}])), \
      mock.patch.object(db, "filter_new_vacancy_urls", return_value=[]), \
@@ -161,7 +163,7 @@ with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777,
     m_send.assert_not_called()
 print("PASS: run_vacancy_alerts sends nothing when every match was already alerted (no re-sends)")
 
-with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(777, "Data Analyst", "Tashkent"), (778, "BI Developer", None)]), \
+with mock.patch.object(db, "list_users_with_alerts_enabled", return_value=[(9001, 777, "Data Analyst", "Tashkent"), (9002, 778, "BI Developer", None)]), \
      mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(side_effect=[Exception("greenhouse down"), []])), \
      mock.patch.object(vacancy_alerts, "_send_telegram_message", new=mock.AsyncMock()) as m_send:
     summary = _run(vacancy_alerts.run_vacancy_alerts())

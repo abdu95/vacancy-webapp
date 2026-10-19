@@ -29,6 +29,10 @@ def build_init_data(user_json: str, token: str) -> str:
 
 client = TestClient(server.app)
 init_data = build_init_data('{"id":777,"first_name":"Test","username":"testuser"}', TOKEN)
+# Internal users.id that the mocked ensure_user hands back - deliberately
+# different from the Telegram id (777) in init_data, so every assertion below
+# proves routes pass the internal id to app/db, not the Telegram one.
+INTERNAL_USER_ID = 9001
 
 FAKE_CHECKS = [
     {"id": 2, "jd_text": "Senior Data Analyst at Acme", "level": {"assessment": "Mid"}, "created_at": "2026-09-07T00:00:00"},
@@ -47,20 +51,20 @@ FAKE_CHECK_DETAIL = {
 }
 
 # --- Test 1: list checks returns the user's saved analysis history ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "list_analyses", return_value=FAKE_CHECKS) as m_list, \
      mock.patch.object(db, "get_quota_status", return_value=(2, 5)):
     resp = client.post("/api/checks", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"checks": FAKE_CHECKS, "checks_used": 2}
-    m_list.assert_called_once_with(777)
+    m_list.assert_called_once_with(INTERNAL_USER_ID)
 print("PASS: /api/checks lists the caller's saved analysis history")
 
 # --- Test 1b: checks_used is included even when history is empty - lets the
 # frontend tell "never checked" apart from "checked before history existed"
 # (real bug: a paying user who'd checked 3 times before My Checks shipped
 # saw "You haven't checked a CV yet", which was false and read as data loss) ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "list_analyses", return_value=[]), \
      mock.patch.object(db, "get_quota_status", return_value=(3, 3)):
     resp = client.post("/api/checks", json={"init_data": init_data})
@@ -69,32 +73,32 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: /api/checks reports checks_used alongside an empty history list")
 
 # --- Test 2: get returns full detail for an owned check ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_analysis", return_value=FAKE_CHECK_DETAIL) as m_get:
     resp = client.post("/api/checks/get", json={"init_data": init_data, "analysis_id": 1})
     assert resp.status_code == 200, resp.text
     assert resp.json() == FAKE_CHECK_DETAIL
-    m_get.assert_called_once_with(777, 1)
+    m_get.assert_called_once_with(INTERNAL_USER_ID, 1)
 print("PASS: get returns full detail (ats/xyz/tools/level/roadmap_items) for a check the caller owns")
 
 # --- Test 3: get on a not-owned/nonexistent check -> 404, no leak ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_analysis", return_value=None):
     resp = client.post("/api/checks/get", json={"init_data": init_data, "analysis_id": 999})
     assert resp.status_code == 404, resp.text
 print("PASS: get on a not-owned/nonexistent check returns 404")
 
 # --- Test 4: delete succeeds for an owned check ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_analysis", return_value=True) as m_del:
     resp = client.post("/api/checks/delete", json={"init_data": init_data, "analysis_id": 1})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"deleted": True}
-    m_del.assert_called_once_with(777, 1)
+    m_del.assert_called_once_with(INTERNAL_USER_ID, 1)
 print("PASS: delete removes a check the caller owns")
 
 # --- Test 5: delete on a not-owned/nonexistent check -> 404 ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_analysis", return_value=False):
     resp = client.post("/api/checks/delete", json={"init_data": init_data, "analysis_id": 999})
     assert resp.status_code == 404, resp.text

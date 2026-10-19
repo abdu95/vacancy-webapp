@@ -27,7 +27,7 @@ class QuotaStatusRequest(BaseModel):
 @router.post("/api/quota-status")
 async def quota_status(req: QuotaStatusRequest):
     user = authenticate(req.init_data)
-    usage_count, quota = db.get_quota_status(user["id"])
+    usage_count, quota = db.get_quota_status(user["user_id"])
     return {
         "remaining": max(0, quota - usage_count),
         "quota": quota,
@@ -49,7 +49,7 @@ async def checkout(req: CheckoutRequest):
         raise HTTPException(500, "Payment is not configured")
 
     amount = req.checks * PRICE_PER_CHECK_TIYIN
-    order_id = db.get_or_create_order(user["id"], amount, f"{req.checks}_checks")
+    order_id = db.get_or_create_order(user["user_id"], amount, f"{req.checks}_checks")
     raw = f"m={PAYME_ID};ac.order_id={order_id};a={amount};c=https://t.me/{BOT_USERNAME}"
     checkout_url = "https://checkout.paycom.uz/" + base64.b64encode(raw.encode()).decode()
     return {"checkout_url": checkout_url, "amount": amount, "checks": req.checks}

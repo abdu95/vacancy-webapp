@@ -42,9 +42,10 @@ def verify_init_data(init_data: str) -> dict:
 
 def authenticate(init_data: str) -> dict:
     """Validates initData and ensures a `users` row exists for this
-    telegram_id (needed before any write to `applications`, which has a
-    foreign key to `users`). Returns the Telegram user dict (id,
-    first_name, username)."""
+    telegram_id (needed before any write to a per-user table, which all
+    reference `users`). Returns the Telegram user dict (id, first_name,
+    username) plus "user_id": the internal users.id every app/db function
+    takes. user["id"] is the Telegram id - only for talking to Telegram."""
     parsed = verify_init_data(init_data)
     try:
         user = json.loads(parsed.get("user", "{}"))
@@ -53,5 +54,5 @@ def authenticate(init_data: str) -> dict:
     telegram_id = user.get("id")
     if not telegram_id:
         raise HTTPException(400, "Missing user id in initData")
-    db.ensure_user(telegram_id, user.get("username"), user.get("first_name"))
+    user["user_id"] = db.ensure_user(telegram_id, user.get("username"), user.get("first_name"))
     return user

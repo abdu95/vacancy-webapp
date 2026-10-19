@@ -13,13 +13,14 @@ from app import db
 FREE_LIMIT = int(os.getenv("FREE_LIMIT", "2"))
 
 
-def ensure_user(telegram_id: int, username: str | None, name: str | None) -> None:
+def ensure_user(telegram_id: int, username: str | None, name: str | None) -> int:
     """Upserts a `users` row for this telegram_id, mirroring what
-    bot/state.py's _upsert_and_load_account does. Required before any
-    write to `applications`, since that table has
-    telegram_id REFERENCES users(telegram_id) - a user who only ever
-    opens the Mini App (never /start in chat) would otherwise have no
-    `users` row and every save would fail on the FK constraint."""
+    bot/state.py's _upsert_and_load_account does, and returns the user's
+    internal id (users.id) - the key every other function here takes.
+    Required before any write to a per-user table, since those reference
+    users - a user who only ever opens the Mini App (never /start in chat)
+    would otherwise have no `users` row and every save would fail on the
+    FK constraint."""
     pool = db.get_pool()
     conn = pool.getconn()
     try:
@@ -31,12 +32,14 @@ def ensure_user(telegram_id: int, username: str | None, name: str | None) -> Non
                 SET last_seen_at = now(),
                     username = COALESCE(EXCLUDED.username, users.username),
                     name = COALESCE(users.name, EXCLUDED.name)
+                RETURNING id
             """, (telegram_id, username, name))
+            return cur.fetchone()[0]
     finally:
         pool.putconn(conn)
 
 
-def get_user_language(telegram_id: int) -> str:
+def get_user_language(user_id: int) -> str:
     """Returns the language the user picked in the bot (uz/ru), matching
     bot/i18n.py's fallback: empty/unset -> "en". Deliberately NOT the
     device's system language (Telegram's initData.user.language_code) -
@@ -46,14 +49,14 @@ def get_user_language(telegram_id: int) -> str:
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT language FROM users WHERE telegram_id = %s", (telegram_id,))
+            cur.execute("SELECT language FROM users WHERE id = %s", (user_id,))
             row = cur.fetchone()
             return row[0] if row and row[0] else "en"
     finally:
         pool.putconn(conn)
 
 
-def get_user_name(telegram_id: int) -> str | None:
+def get_user_name(user_id: int) -> str | None:
     """The name the user typed when the bot asked for it. Preferred over
     Telegram's first_name (initData.user), which is whatever the profile
     happens to say - often a nickname or handle the user didn't choose to
@@ -62,14 +65,14 @@ def get_user_name(telegram_id: int) -> str | None:
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT name FROM users WHERE telegram_id = %s", (telegram_id,))
+            cur.execute("SELECT name FROM users WHERE id = %s", (user_id,))
             row = cur.fetchone()
             return row[0] if row and row[0] else None
     finally:
         pool.putconn(conn)
 
 
-def get_quota_status(telegram_id: int) -> tuple[int, int]:
+def get_quota_status(user_id: int) -> tuple[int, int]:
     """Returns (usage_count, effective_quota), mirroring bot/state.py's
     get_quota_override + bot/bot.py's effective_quota exactly - a real
     quota_override (set by an admin /grant or a Payme purchase, from
@@ -78,7 +81,7 @@ def get_quota_status(telegram_id: int) -> tuple[int, int]:
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("SELECT checks_used, quota_override FROM users WHERE telegram_id = %s", (telegram_id,))
+            cur.execute("SELECT checks_used, quota_override FROM users WHERE id = %s", (user_id,))
             row = cur.fetchone()
             if not row:
                 return 0, FREE_LIMIT
@@ -88,13 +91,13 @@ def get_quota_status(telegram_id: int) -> tuple[int, int]:
         pool.putconn(conn)
 
 
-def increment_usage_count(telegram_id: int) -> None:
+def increment_usage_count(user_id: int) -> None:
     """Called once, only after a successful analyze_cv - matches the bot's
     exact quota semantics (roadmap/CV-fix follow-ons stay free)."""
     pool = db.get_pool()
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("UPDATE users SET checks_used = checks_used + 1 WHERE telegram_id = %s", (telegram_id,))
+            cur.execute("UPDATE users SET checks_used = checks_used + 1 WHERE id = %s", (user_id,))
     finally:
         pool.putconn(conn)

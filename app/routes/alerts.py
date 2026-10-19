@@ -16,7 +16,7 @@ class SavedSearchRequest(BaseModel):
 @router.post("/api/saved-search")
 async def get_saved_search(req: SavedSearchRequest):
     user = authenticate(req.init_data)
-    return db.get_saved_search(user["id"])
+    return db.get_saved_search(user["user_id"])
 
 
 class SaveSavedSearchRequest(BaseModel):
@@ -32,7 +32,7 @@ async def save_saved_search(req: SaveSavedSearchRequest):
     job_title = req.job_title.strip()
     if req.alerts_enabled and not job_title:
         raise HTTPException(400, "Set a job title before turning on alerts")
-    db.save_search_criteria(user["id"], job_title, req.location.strip(), req.alerts_enabled)
+    db.save_search_criteria(user["user_id"], job_title, req.location.strip(), req.alerts_enabled)
     return {"saved": True}
 
 
@@ -48,7 +48,7 @@ async def get_alert_batch(req: AlertBatchRequest):
     vacancies that digest sent, scoped to the authenticated user so one
     person's batch_id can't be used to read another's."""
     user = authenticate(req.init_data)
-    batch = db.get_alert_batch(user["id"], req.batch_id)
+    batch = db.get_alert_batch(user["user_id"], req.batch_id)
     if not batch:
         raise HTTPException(404, "This alert has expired or no longer exists")
     return batch

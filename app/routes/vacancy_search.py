@@ -46,7 +46,7 @@ class SuggestTitlesRequest(BaseModel):
 @router.post("/api/suggest-titles")
 async def suggest_titles(req: SuggestTitlesRequest):
     user = authenticate(req.init_data)
-    cv_text = db.get_active_cv_text(user["id"])
+    cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
 
@@ -75,12 +75,12 @@ class ScoreRequest(BaseModel):
 @router.post("/api/score-vacancy")
 async def score_vacancy_endpoint(req: ScoreRequest):
     user = authenticate(req.init_data)
-    cv_text = db.get_active_cv_text(user["id"])
+    cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
 
     try:
-        language = db.get_user_language(user["id"])
+        language = db.get_user_language(user["user_id"])
         score = await scoring.score_vacancy(cv_text, req.vacancy.model_dump(), language)
     except Exception:
         logger.exception("Scoring failed")
@@ -98,12 +98,12 @@ class RecommendationsRequest(BaseModel):
 @router.post("/api/cv-recommendations")
 async def cv_recommendations(req: RecommendationsRequest):
     user = authenticate(req.init_data)
-    cv_text = db.get_active_cv_text(user["id"])
+    cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
 
     try:
-        language = db.get_user_language(user["id"])
+        language = db.get_user_language(user["user_id"])
         fixes = await cv_fixes.generate_cv_fixes(req.level, req.vacancy.model_dump(), cv_text, language)
     except Exception:
         logger.exception("CV fix generation failed")

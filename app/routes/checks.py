@@ -16,8 +16,8 @@ class ChecksRequest(BaseModel):
 @router.post("/api/checks")
 async def list_checks(req: ChecksRequest):
     user = authenticate(req.init_data)
-    checks_used, _ = db.get_quota_status(user["id"])
-    return {"checks": db.list_analyses(user["id"]), "checks_used": checks_used}
+    checks_used, _ = db.get_quota_status(user["user_id"])
+    return {"checks": db.list_analyses(user["user_id"]), "checks_used": checks_used}
 
 
 class GetCheckRequest(BaseModel):
@@ -28,7 +28,7 @@ class GetCheckRequest(BaseModel):
 @router.post("/api/checks/get")
 async def get_check(req: GetCheckRequest):
     user = authenticate(req.init_data)
-    analysis = db.get_analysis(user["id"], req.analysis_id)
+    analysis = db.get_analysis(user["user_id"], req.analysis_id)
     if not analysis:
         raise HTTPException(404, "Check not found")
     return analysis
@@ -37,7 +37,7 @@ async def get_check(req: GetCheckRequest):
 @router.post("/api/checks/delete")
 async def delete_check(req: GetCheckRequest):
     user = authenticate(req.init_data)
-    found = db.delete_analysis(user["id"], req.analysis_id)
+    found = db.delete_analysis(user["user_id"], req.analysis_id)
     if not found:
         raise HTTPException(404, "Check not found")
     return {"deleted": True}

@@ -30,9 +30,13 @@ def build_init_data(user_json: str, token: str) -> str:
 
 client = TestClient(server.app)
 init_data = build_init_data('{"id":777,"first_name":"Test","username":"testuser"}', TOKEN)
+# Internal users.id that the mocked ensure_user hands back - deliberately
+# different from the Telegram id (777) in init_data, so every assertion below
+# proves routes pass the internal id to app/db, not the Telegram one.
+INTERNAL_USER_ID = 9001
 
 # --- Test 1: cv-status with no CV -> has_cv False, ensure_user called ---
-with mock.patch.object(db, "ensure_user") as m_ensure, \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID) as m_ensure, \
      mock.patch.object(db, "get_active_cv_text", return_value=None) as m_get, \
      mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(db, "get_user_name", return_value=None):
@@ -40,11 +44,11 @@ with mock.patch.object(db, "ensure_user") as m_ensure, \
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"has_cv": False, "lang": "en", "name": None}
     m_ensure.assert_called_once_with(777, "testuser", "Test")
-    m_get.assert_called_once_with(777)
+    m_get.assert_called_once_with(INTERNAL_USER_ID)
 print("PASS: cv-status (no CV) ensures user and returns has_cv=False")
 
 # --- Test 2: cv-status with a CV on file -> has_cv True ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(db, "get_user_language", return_value="ru"), \
      mock.patch.object(db, "get_user_name", return_value="Aziza"):
@@ -61,7 +65,7 @@ print("PASS: cv-status rejects tampered signature")
 # --- Test 4: upload-cv with a fake PDF -> parses, extracts position, adds as a new (active) CV ---
 from app.services import cv_parser  # noqa: E402
 from app.services import hypothesis  # noqa: E402
-with mock.patch.object(db, "ensure_user") as m_ensure, \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID) as m_ensure, \
      mock.patch.object(db, "add_cv") as m_add, \
      mock.patch.object(db, "log_event") as m_log, \
      mock.patch.object(cv_parser, "parse_cv", return_value="Extracted CV text here") as m_parse, \
@@ -76,12 +80,12 @@ with mock.patch.object(db, "ensure_user") as m_ensure, \
     m_ensure.assert_called_once_with(777, "testuser", "Test")
     m_parse.assert_called_once()
     m_extract.assert_called_once_with("Extracted CV text here")
-    m_add.assert_called_once_with(777, "resume.pdf", "Extracted CV text here", "Data Analyst")
-    m_log.assert_called_once_with(777, "cv_uploaded")
+    m_add.assert_called_once_with(INTERNAL_USER_ID, "resume.pdf", "Extracted CV text here", "Data Analyst")
+    m_log.assert_called_once_with(INTERNAL_USER_ID, "cv_uploaded")
 print("PASS: upload-cv parses, extracts a position label, adds a new CV, logs cv_uploaded")
 
 # --- Test 4b: position extraction failing must not block the upload itself ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "add_cv") as m_add, \
      mock.patch.object(db, "log_event"), \
      mock.patch.object(cv_parser, "parse_cv", return_value="Extracted CV text here"), \
@@ -92,11 +96,11 @@ with mock.patch.object(db, "ensure_user"), \
         files={"file": ("resume.pdf", io.BytesIO(b"%PDF-fake"), "application/pdf")},
     )
     assert resp.status_code == 200, resp.text
-    m_add.assert_called_once_with(777, "resume.pdf", "Extracted CV text here", None)
+    m_add.assert_called_once_with(INTERNAL_USER_ID, "resume.pdf", "Extracted CV text here", None)
 print("PASS: a failed position extraction still saves the CV, just without a position label")
 
 # --- Test 5: upload-cv rejects non-PDF/DOCX file types ---
-with mock.patch.object(db, "ensure_user"):
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID):
     resp = client.post(
         "/api/upload-cv",
         data={"init_data": init_data},
@@ -107,7 +111,7 @@ with mock.patch.object(db, "ensure_user"):
 print("PASS: upload-cv rejects unsupported file types")
 
 # --- Test 6: upload-cv with a file that extracts to empty text -> 400 ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(cv_parser, "parse_cv", return_value="   "):
     resp = client.post(
         "/api/upload-cv",
@@ -120,7 +124,7 @@ print("PASS: upload-cv rejects empty-text extraction")
 
 # --- Test 7: suggest-titles with a CV on file -> returns titles ---
 from app.services import hypothesis  # noqa: E402
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(hypothesis, "suggest_job_titles", new=mock.AsyncMock(
          return_value=["Data Analyst", "BI Developer", "Analytics Engineer", "Data Engineer", "Data Scientist"])):
@@ -130,7 +134,7 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: suggest-titles returns 5 titles when a CV is on file")
 
 # --- Test 8: suggest-titles with no CV on file -> 400 ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value=None):
     resp = client.post("/api/suggest-titles", json={"init_data": init_data})
     assert resp.status_code == 400, resp.text
@@ -154,7 +158,7 @@ TEST_VACANCY = {
 
 # --- Test 10: score-vacancy uses on-file CV, returns score dict ---
 from app.services import scoring  # noqa: E402
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(scoring, "score_vacancy", new=mock.AsyncMock(
@@ -166,7 +170,7 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: score-vacancy scores against on-file CV")
 
 # --- Test 11: score-vacancy with no CV on file -> 400 ---
-with mock.patch.object(db, "ensure_user"), mock.patch.object(db, "get_active_cv_text", return_value=None):
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), mock.patch.object(db, "get_active_cv_text", return_value=None):
     resp = client.post("/api/score-vacancy", json={"init_data": init_data, "vacancy": TEST_VACANCY})
     assert resp.status_code == 400, resp.text
 print("PASS: score-vacancy requires a CV on file")
@@ -174,7 +178,7 @@ print("PASS: score-vacancy requires a CV on file")
 # --- Test 12: cv-recommendations passes level through correctly ---
 from app.services import cv_fixes  # noqa: E402
 fake_fixes = [{"issue": "x", "before": "y", "after": "z"}] * 5
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
      mock.patch.object(db, "get_user_language", return_value="en"), \
      mock.patch.object(cv_fixes, "generate_cv_fixes", new=mock.AsyncMock(return_value=fake_fixes)) as m_fixes:
@@ -187,7 +191,7 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: cv-recommendations passes level/vacancy/cv through correctly")
 
 # --- Test 13: apply saves with score, reads cv_text fresh from db (not trusting client) ---
-with mock.patch.object(db, "ensure_user") as m_ensure, \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID) as m_ensure, \
      mock.patch.object(db, "get_active_cv_text", return_value="The current CV on file"), \
      mock.patch.object(db, "save_application") as m_save:
     resp = client.post("/api/apply", json={
@@ -197,16 +201,16 @@ with mock.patch.object(db, "ensure_user") as m_ensure, \
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"saved": True}
     m_ensure.assert_called_once_with(777, "testuser", "Test")
-    m_save.assert_called_once_with(777, TEST_VACANCY, "The current CV on file", {"score": 90, "matched": ["SQL"], "missing": []})
+    m_save.assert_called_once_with(INTERNAL_USER_ID, TEST_VACANCY, "The current CV on file", {"score": 90, "matched": ["SQL"], "missing": []})
 print("PASS: apply saves the application using the current on-file CV, not client-supplied text")
 
 # --- Test 14: apply without a score (direct-apply path) ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_active_cv_text", return_value="cv"), \
      mock.patch.object(db, "save_application") as m_save:
     resp = client.post("/api/apply", json={"init_data": init_data, "vacancy": TEST_VACANCY, "score": None})
     assert resp.status_code == 200, resp.text
-    m_save.assert_called_once_with(777, TEST_VACANCY, "cv", None)
+    m_save.assert_called_once_with(INTERNAL_USER_ID, TEST_VACANCY, "cv", None)
 print("PASS: apply works with score=None (direct-apply path)")
 
 # --- Test 15: applications list returns the current user's rows ---
@@ -215,13 +219,13 @@ fake_rows = [{
     "url": "https://example.com", "match_score": 80, "status": "applied",
     "created_at": "2026-09-05T12:00:00+00:00",
 }]
-with mock.patch.object(db, "ensure_user") as m_ensure, \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID) as m_ensure, \
      mock.patch.object(db, "list_applications", return_value=fake_rows) as m_list:
     resp = client.post("/api/applications", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"applications": fake_rows}
     m_ensure.assert_called_once_with(777, "testuser", "Test")
-    m_list.assert_called_once_with(777)
+    m_list.assert_called_once_with(INTERNAL_USER_ID)
 print("PASS: applications list returns the current user's tracked rows")
 
 # --- Test 16: applications list rejects tampered signature (same as every other endpoint) ---
@@ -230,17 +234,17 @@ assert resp.status_code == 401, resp.text
 print("PASS: applications list rejects tampered signature")
 
 # --- Test 17: update-status succeeds for the owning user ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "update_application_status", return_value=True) as m_upd:
     resp = client.post("/api/applications/update-status", json={
         "init_data": init_data, "application_id": 42, "status": "phone_screen",
     })
     assert resp.status_code == 200, resp.text
-    m_upd.assert_called_once_with(777, 42, "phone_screen")
+    m_upd.assert_called_once_with(INTERNAL_USER_ID, 42, "phone_screen")
 print("PASS: update-status updates when the application belongs to the caller")
 
 # --- Test 18: update-status rejects an invalid status value ---
-with mock.patch.object(db, "ensure_user"):
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID):
     resp = client.post("/api/applications/update-status", json={
         "init_data": init_data, "application_id": 42, "status": "made_up_status",
     })
@@ -250,7 +254,7 @@ print("PASS: update-status rejects a status value outside the whitelist")
 # --- Test 19: update-status on someone else's (or nonexistent) application -> 404 ---
 # db.update_application_status filters by telegram_id itself, so a mismatched
 # owner looks identical to "doesn't exist" here - never leaks which is true.
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "update_application_status", return_value=False):
     resp = client.post("/api/applications/update-status", json={
         "init_data": init_data, "application_id": 999, "status": "offer",
@@ -259,15 +263,15 @@ with mock.patch.object(db, "ensure_user"), \
 print("PASS: update-status on a not-owned/nonexistent application returns 404, not a leak")
 
 # --- Test 20: delete succeeds for the owning user ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_application", return_value=True) as m_del:
     resp = client.post("/api/applications/delete", json={"init_data": init_data, "application_id": 42})
     assert resp.status_code == 200, resp.text
-    m_del.assert_called_once_with(777, 42)
+    m_del.assert_called_once_with(INTERNAL_USER_ID, 42)
 print("PASS: delete removes an application the caller owns")
 
 # --- Test 21: delete on a not-owned/nonexistent application -> 404 ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_application", return_value=False):
     resp = client.post("/api/applications/delete", json={"init_data": init_data, "application_id": 999})
     assert resp.status_code == 404, resp.text

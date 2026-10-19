@@ -80,19 +80,19 @@ async def run_vacancy_alerts() -> dict:
     users = db.list_users_with_alerts_enabled()
     sent = 0
     failed = 0
-    for telegram_id, job_title, location in users:
+    for user_id, telegram_id, job_title, location in users:
         try:
             vacancies = await vacancy_source.search_vacancies(
                 job_title, location or "Any", "Any", "Any", seen_companies=None
             )
             urls = [v["url"] for v in vacancies if v.get("url")]
-            new_urls = set(db.filter_new_vacancy_urls(telegram_id, urls))
+            new_urls = set(db.filter_new_vacancy_urls(user_id, urls))
             fresh = [v for v in vacancies if v.get("url") in new_urls]
             if not fresh:
                 continue
             batch_id = str(uuid.uuid4())
             await _send_telegram_message(telegram_id, _build_digest(job_title, location, fresh), batch_id)
-            db.mark_vacancies_alerted(telegram_id, fresh, batch_id, job_title, location)
+            db.mark_vacancies_alerted(user_id, fresh, batch_id, job_title, location)
             sent += 1
         except Exception:
             logger.exception("Vacancy alert run failed for telegram_id=%s", telegram_id)

@@ -6,7 +6,7 @@ import json
 from app import db
 
 
-def save_analysis(telegram_id: int, jd_text: str, ats: dict, xyz: dict, tools: dict, level: dict) -> int:
+def save_analysis(user_id: int, jd_text: str, ats: dict, xyz: dict, tools: dict, level: dict) -> int:
     """Written immediately after a successful /api/cv-jd-analysis call,
     before the user even starts the roadmap - the analysis itself is
     already worth keeping even if they never touch the roadmap steps."""
@@ -15,19 +15,19 @@ def save_analysis(telegram_id: int, jd_text: str, ats: dict, xyz: dict, tools: d
     try:
         with conn, conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO cv_analyses (telegram_id, jd_text, ats, xyz, tools, level)
+                INSERT INTO cv_analyses (user_id, jd_text, ats, xyz, tools, level)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (telegram_id, jd_text, json.dumps(ats), json.dumps(xyz), json.dumps(tools), json.dumps(level)))
+            """, (user_id, jd_text, json.dumps(ats), json.dumps(xyz), json.dumps(tools), json.dumps(level)))
             return cur.fetchone()[0]
     finally:
         pool.putconn(conn)
 
 
-def save_roadmap_item(telegram_id: int, analysis_id: int, item: int, title: str, body: dict) -> bool:
+def save_roadmap_item(user_id: int, analysis_id: int, item: int, title: str, body: dict) -> bool:
     """Merges one roadmap step's result into roadmap_items, keyed by item
     number. Returns False if analysis_id doesn't exist/isn't owned by this
-    telegram_id - callers should treat a save failure here as best-effort,
+    user_id - callers should treat a save failure here as best-effort,
     same as CV position extraction: don't fail the roadmap-item request
     itself just because history-saving failed."""
     pool = db.get_pool()
@@ -37,22 +37,22 @@ def save_roadmap_item(telegram_id: int, analysis_id: int, item: int, title: str,
             cur.execute("""
                 UPDATE cv_analyses
                 SET roadmap_items = roadmap_items || jsonb_build_object(%s, %s::jsonb)
-                WHERE id = %s AND telegram_id = %s
-            """, (str(item), json.dumps({"title": title, **body}), analysis_id, telegram_id))
+                WHERE id = %s AND user_id = %s
+            """, (str(item), json.dumps({"title": title, **body}), analysis_id, user_id))
             return cur.rowcount > 0
     finally:
         pool.putconn(conn)
 
 
-def list_analyses(telegram_id: int) -> list[dict]:
+def list_analyses(user_id: int) -> list[dict]:
     pool = db.get_pool()
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
             cur.execute("""
                 SELECT id, jd_text, level, created_at
-                FROM cv_analyses WHERE telegram_id = %s ORDER BY created_at DESC
-            """, (telegram_id,))
+                FROM cv_analyses WHERE user_id = %s ORDER BY created_at DESC
+            """, (user_id,))
             rows = cur.fetchall()
         return [
             {"id": r[0], "jd_text": r[1], "level": r[2], "created_at": r[3].isoformat()}
@@ -62,7 +62,7 @@ def list_analyses(telegram_id: int) -> list[dict]:
         pool.putconn(conn)
 
 
-def get_analysis(telegram_id: int, analysis_id: int) -> dict | None:
+def get_analysis(user_id: int, analysis_id: int) -> dict | None:
     """Returns None if not found/not owned - callers must treat that as
     "not found", never leak whether some other user's analysis_id exists."""
     pool = db.get_pool()
@@ -71,8 +71,8 @@ def get_analysis(telegram_id: int, analysis_id: int) -> dict | None:
         with conn, conn.cursor() as cur:
             cur.execute("""
                 SELECT id, jd_text, ats, xyz, tools, level, roadmap_items, created_at
-                FROM cv_analyses WHERE id = %s AND telegram_id = %s
-            """, (analysis_id, telegram_id))
+                FROM cv_analyses WHERE id = %s AND user_id = %s
+            """, (analysis_id, user_id))
             row = cur.fetchone()
             if not row:
                 return None
@@ -85,12 +85,12 @@ def get_analysis(telegram_id: int, analysis_id: int) -> dict | None:
         pool.putconn(conn)
 
 
-def delete_analysis(telegram_id: int, analysis_id: int) -> bool:
+def delete_analysis(user_id: int, analysis_id: int) -> bool:
     pool = db.get_pool()
     conn = pool.getconn()
     try:
         with conn, conn.cursor() as cur:
-            cur.execute("DELETE FROM cv_analyses WHERE id = %s AND telegram_id = %s", (analysis_id, telegram_id))
+            cur.execute("DELETE FROM cv_analyses WHERE id = %s AND user_id = %s", (analysis_id, user_id))
             return cur.rowcount > 0
     finally:
         pool.putconn(conn)

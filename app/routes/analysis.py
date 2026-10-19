@@ -22,7 +22,7 @@ class AnalyzeRequest(BaseModel):
 @router.post("/api/cv-jd-analysis")
 async def cv_jd_analysis(req: AnalyzeRequest):
     user = authenticate(req.init_data)
-    cv_text = db.get_active_cv_text(user["id"])
+    cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
 
@@ -39,26 +39,26 @@ async def cv_jd_analysis(req: AnalyzeRequest):
     if len(jd_text) < 100:
         raise HTTPException(400, "Job description looks too short")
 
-    usage_count, quota = db.get_quota_status(user["id"])
+    usage_count, quota = db.get_quota_status(user["user_id"])
     if usage_count >= quota:
-        db.log_event(user["id"], "limit_reached")
+        db.log_event(user["user_id"], "limit_reached")
         return {"limit_reached": True, "remaining": 0, "quota": quota}
 
     try:
-        language = db.get_user_language(user["id"])
+        language = db.get_user_language(user["user_id"])
         outputs = await cv_analysis.analyze_cv(jd_text, cv_text, language)
     except Exception:
         logger.exception("CV/JD analysis failed")
         raise HTTPException(502, "Analysis failed, try again")
 
-    db.increment_usage_count(user["id"])
-    db.log_event(user["id"], "check_completed")
-    usage_count, quota = db.get_quota_status(user["id"])
+    db.increment_usage_count(user["user_id"])
+    db.log_event(user["user_id"], "check_completed")
+    usage_count, quota = db.get_quota_status(user["user_id"])
     remaining = max(0, quota - usage_count)
 
     try:
         analysis_id = db.save_analysis(
-            user["id"], jd_text, outputs["ats"], outputs["xyz"], outputs["tools"], outputs["level"]
+            user["user_id"], jd_text, outputs["ats"], outputs["xyz"], outputs["tools"], outputs["level"]
         )
     except Exception:
         logger.exception("Saving analysis to history failed - the analysis itself still succeeded")
@@ -81,17 +81,17 @@ class RoadmapItemRequest(BaseModel):
 @router.post("/api/roadmap-item")
 async def roadmap_item(req: RoadmapItemRequest):
     user = authenticate(req.init_data)
-    cv_text = db.get_active_cv_text(user["id"])
+    cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
 
     title = cv_analysis.roadmap_block_title(req.level, req.item)
     max_item = cv_analysis.roadmap_max_item(req.level)
     if req.item == 1:
-        db.log_event(user["id"], "roadmap_requested")
+        db.log_event(user["user_id"], "roadmap_requested")
 
     try:
-        language = db.get_user_language(user["id"])
+        language = db.get_user_language(user["user_id"])
         if title == "CV Fixes":
             fixes = await cv_analysis.generate_cv_fixes(req.level, req.jd, cv_text, language)
             result = {"title": title, "fixes": fixes, "is_last": req.item >= max_item}
@@ -105,7 +105,7 @@ async def roadmap_item(req: RoadmapItemRequest):
     if req.analysis_id is not None:
         try:
             body = {"fixes": result["fixes"]} if "fixes" in result else {"text": result["text"]}
-            db.save_roadmap_item(user["id"], req.analysis_id, req.item, title, body)
+            db.save_roadmap_item(user["user_id"], req.analysis_id, req.item, title, body)
         except Exception:
             logger.exception("Saving roadmap item to history failed - the item itself still succeeded")
 

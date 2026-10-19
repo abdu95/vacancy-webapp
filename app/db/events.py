@@ -5,7 +5,7 @@ import json
 from app import db
 
 
-def log_event(telegram_id: int, event_type: str, metadata: dict | None = None) -> None:
+def log_event(user_id: int, event_type: str, metadata: dict | None = None) -> None:
     """Same `events` table and event_type vocabulary as bot/state.py's
     log_event - using identical names (not webapp-prefixed ones) means
     bot.py's stats() picks these up with zero changes, regardless of
@@ -15,8 +15,8 @@ def log_event(telegram_id: int, event_type: str, metadata: dict | None = None) -
     try:
         with conn, conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO events (telegram_id, event_type, metadata) VALUES (%s, %s, %s)",
-                (telegram_id, event_type, json.dumps(metadata) if metadata is not None else None),
+                "INSERT INTO events (user_id, event_type, metadata) VALUES (%s, %s, %s)",
+                (user_id, event_type, json.dumps(metadata) if metadata is not None else None),
             )
     finally:
         pool.putconn(conn)

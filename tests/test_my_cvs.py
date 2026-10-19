@@ -29,6 +29,10 @@ def build_init_data(user_json: str, token: str) -> str:
 
 client = TestClient(server.app)
 init_data = build_init_data('{"id":777,"first_name":"Test","username":"testuser"}', TOKEN)
+# Internal users.id that the mocked ensure_user hands back - deliberately
+# different from the Telegram id (777) in init_data, so every assertion below
+# proves routes pass the internal id to app/db, not the Telegram one.
+INTERNAL_USER_ID = 9001
 
 FAKE_CVS = [
     {"id": 2, "label": "resume_v2.pdf", "is_active": True, "extracted_position": "Data Analyst", "created_at": "2026-09-07T00:00:00"},
@@ -36,41 +40,41 @@ FAKE_CVS = [
 ]
 
 # --- Test 1: list CVs returns the user's saved CVs ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "list_cvs", return_value=FAKE_CVS) as m_list:
     resp = client.post("/api/cvs", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"cvs": FAKE_CVS}
-    m_list.assert_called_once_with(777)
+    m_list.assert_called_once_with(INTERNAL_USER_ID)
 print("PASS: /api/cvs lists the caller's saved CVs")
 
 # --- Test 2: set-active succeeds for an owned CV ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "set_active_cv", return_value=True) as m_set:
     resp = client.post("/api/cvs/set-active", json={"init_data": init_data, "cv_id": 1})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"updated": True}
-    m_set.assert_called_once_with(777, 1)
+    m_set.assert_called_once_with(INTERNAL_USER_ID, 1)
 print("PASS: set-active switches the active CV for a CV the caller owns")
 
 # --- Test 3: set-active on a not-owned/nonexistent CV -> 404, no leak ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "set_active_cv", return_value=False):
     resp = client.post("/api/cvs/set-active", json={"init_data": init_data, "cv_id": 999})
     assert resp.status_code == 404, resp.text
 print("PASS: set-active on a not-owned/nonexistent CV returns 404")
 
 # --- Test 4: delete succeeds for an owned CV ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_cv", return_value=True) as m_del:
     resp = client.post("/api/cvs/delete", json={"init_data": init_data, "cv_id": 1})
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"deleted": True}
-    m_del.assert_called_once_with(777, 1)
+    m_del.assert_called_once_with(INTERNAL_USER_ID, 1)
 print("PASS: delete removes a CV the caller owns")
 
 # --- Test 5: delete on a not-owned/nonexistent CV -> 404 ---
-with mock.patch.object(db, "ensure_user"), \
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "delete_cv", return_value=False):
     resp = client.post("/api/cvs/delete", json={"init_data": init_data, "cv_id": 999})
     assert resp.status_code == 404, resp.text
