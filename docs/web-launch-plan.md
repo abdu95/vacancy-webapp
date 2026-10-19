@@ -390,6 +390,67 @@ Manual with your Google account (in order: localhost, then staging, then prod):
 
 ---
 
+## Next session: put the web version live on app.chashma.uz
+
+⚠ **Unpushed local commits (2026-10-19), and the order matters.** `ae-coach-bot` `c093238` (schema) must
+reach prod **before** `vacancy-webapp` `23b06e8`..`9fb1295` (sign-in code + top nav). The webapp code
+reads `google_sub`, `web_sessions` and `signup_channel`, which only the bot's migration creates.
+
+### Step 1: Domain `app.chashma.uz` (Claude + you)
+1. Claude: `railway domain app.chashma.uz -s vacancy-webapp -e production`. Railway replies with
+   a **CNAME target** (something like `xxxx.up.railway.app`) and possibly a **TXT verification record**.
+2. You, in Cloudflare: dashboard → `chashma.uz` → **DNS → Records → Add record**
+   - Type `CNAME`, Name `app`, Target = Railway's value, **Proxy status: DNS only (grey cloud)**, TTL Auto.
+   - If Railway gave a TXT record, add it exactly as shown.
+   - This only adds the `app.` subdomain. The landing page at `chashma.uz` is not touched.
+3. Wait until Railway shows the domain as active with a certificate (minutes, sometimes up to an hour).
+   Check: `https://app.chashma.uz/api/health` returns 200. Until the webapp rollout, it serves today's prod app.
+4. The Telegram Mini App keeps `vacancy-webapp-production.up.railway.app`, so the bot needs no change.
+
+### Step 2: Google Cloud (you, signed in as chashmauz1@gmail.com)
+1. Project **Chashma** → **Google Auth Platform → Clients → Chashma web → Authorized JavaScript origins
+   → Add URI** `https://app.chashma.uz` → **Save**. It can take a few minutes to start working.
+2. **Audience → Test users → Add users**: the US tester's Gmail (and anyone else testing).
+   While the status is *Testing*, only listed accounts can sign in. The limit is 100.
+3. Test users may see a "Google hasn't verified this app" notice and must click *Continue*. That's
+   normal in Testing, and it goes away once the app is published (Step 6).
+
+### Step 3: Prod rollout (Claude), in this order, checking after each step
+1. Set `GOOGLE_CLIENT_ID` on prod `vacancy-webapp` (value in the Phase 2 status above). It's harmless
+   on today's prod code, which doesn't read it.
+2. Back up prod into `chashma-backups/prod-before-phase-2-<time>.sql` and test-restore it locally (row counts).
+3. Push `ae-coach-bot` (its schema migration runs at startup). Verify on prod: the `web_sessions` table exists,
+   `users` has `google_sub`, `email` and `signup_channel`, every existing row is `signup_channel='telegram'`,
+   row counts are unchanged, and there are no errors.
+4. Push `vacancy-webapp`. Verify: health 200, `/api/web-config` returns the client id, `/api/me` without a
+   cookie returns 401, a cross-site request returns 403, `smoke.js` (Telegram) passes, `smoke-payment.js` passes
+   (use the rotated sandbox key, see TODO.md), and a headless browser on `https://app.chashma.uz` shows the
+   sign-in screen with Google's button. Check the logs for errors.
+5. Re-capture `prod_schema.json` and commit it.
+   Rollback: revert the webapp commits and push. The schema change is additive, so it can stay.
+
+### Step 4: Your check on https://app.chashma.uz
+Same as on staging: sign in with Google, onboarding, upload a CV, run 1 analysis, look at Profile,
+sign out and back in. On a laptop the navigation is at the top. Then open `@scan_cv_bot` on your
+phone and check that the Telegram Mini App works exactly as before.
+
+### Step 5: Invite the tester
+Send them `https://app.chashma.uz/?lang=en` and tell them:
+- sign in with the Gmail you added as a test user (if Google says "hasn't verified this app", click Continue)
+- they get 10 free checks, and after that the app offers a waitlist (no payments on the web yet)
+- they should send you anything confusing or broken, with a screenshot if possible
+
+### Step 6: Before opening sign-in to everyone (later)
+1. **Privacy policy and Terms pages** on `chashma.uz` (`/privacy`, `/terms`, in the website repo). They need
+   accurate content: what's stored (CV text, analyses, applications; Telegram id or Google email and name),
+   that CVs are processed by an AI provider (Anthropic's Claude), how long data is kept, and how to ask for deletion.
+2. Google Auth Platform → **Branding**: add the privacy and terms URLs (and a logo, optional, which needs
+   brand verification). Then **Audience → Publish app → In production**. With only `openid/email/profile`
+   there's no security review.
+3. Landing page changes (Phase 3 list below): Chashma rebrand, the "Use in browser" button pointing to
+   `https://app.chashma.uz/?lang=<page>`, and "2 free analyses in Telegram · 10 in web".
+4. Cost guard (Phase 6): a per-IP cap on new web sign-ups per day.
+
 ## Phase 3: Domain and landing page
 - ☐ Railway custom domain `app.chashma.uz` (CNAME in Cloudflare DNS, DNS-only/grey cloud,
   so Railway can issue the certificate).
