@@ -310,3 +310,29 @@ body.web-mode #tab-bar { max-width: 520px; margin: 0 auto; }
 #google-signin-btn { margin: 16px 0; min-height: 44px; }
 #signin-lang select, #onboarding-lang select, #profile-web-account select { margin: 8px 0 12px; }
 #profile-web-account { margin-top: 16px; }
+/* Browser mode on a laptop/desktop: navigation as a top bar, the usual
+   place on a website. Phones (in a browser or Telegram) keep the bottom
+   tab bar - it's where thumbs reach. */
+@media (min-width: 700px) {
+  body.web-mode { padding: 72px 16px 24px 16px; }
+  body.web-mode #tab-bar {
+    top: 0;
+    bottom: auto;
+    max-width: none;
+    justify-content: center;
+    gap: 8px;
+    border-top: none;
+    border-bottom: 1px solid var(--tg-theme-hint-color, #dddddd);
+    padding: 8px 16px;
+  }
+  body.web-mode .tab-btn {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 6px;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 8px;
+  }
+  body.web-mode .tab-btn .tab-icon svg { width: 18px; height: 18px; }
+  body.web-mode .tab-btn.active { background: rgba(36, 129, 204, 0.08); }
+}
