@@ -136,7 +136,36 @@ All statements are idempotent (`IF NOT EXISTS`), because `init_db` runs on every
 - ☐ A `BEFORE INSERT` trigger on each child table that fills `user_id` from `telegram_id`
   when it is NULL. This is what keeps **old code** in the webapp and payme-webhook
   working unchanged: they keep inserting `telegram_id` only.
-- ☐ `ALTER TABLE <child> ALTER COLUMN telegram_id DROP NOT NULL` (needed later for web users).
+- ~~`ALTER TABLE <child> ALTER COLUMN telegram_id DROP NOT NULL`~~ **moved to step 1.4.**
+  No web user exists before Phase 2, so loosening it now would only remove a safety check early.
+
+**Status (2026-10-19):** ☑ built as `schema.migrate_internal_user_id()` (`38b5cc0`), run from `init_db`.
+- ☑ `test_user_id_migration.py`: links every row, idempotent, ids stable, today's INSERTs
+  linked by the trigger. It fails as expected when the trigger is removed.
+- ☑ Staging (prod copy): 0 unlinked rows in all 6 tables, counts unchanged, orphan 99999003
+  backfilled, and the migrated schema is identical to a fresh `init_db()`. `smoke.js` and
+  `smoke-payment.js` pass against staging, and the new test user and sandbox order were auto-linked.
+- ☐ Prod backup, then push, then rerun the checks on prod, then re-capture `prod_schema.json`.
+
+Rollback (additive, so it's safe to run while the old code is live):
+```sql
+DO $$ DECLARE t text; BEGIN
+  FOREACH t IN ARRAY ARRAY['cvs','applications','cv_analyses','alerted_vacancies','events','orders'] LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_fill_user_id ON %I', t, t);
+    EXECUTE format('ALTER TABLE %I DROP COLUMN IF EXISTS user_id', t);
+  END LOOP; END $$;
+DROP FUNCTION IF EXISTS fill_user_id_from_telegram_id();
+ALTER TABLE users DROP COLUMN IF EXISTS id;
+DELETE FROM users WHERE source = 'backfill_orphan';
+```
+(Revert the commit first, or the next restart re-applies it.)
+
+Notes for step 1.4:
+- `migrate_legacy_cv_text` uses `user_id NOT IN (SELECT telegram_id FROM cvs)`. Once
+  web users' CVs have `telegram_id NULL`, `NOT IN` against a NULL returns nothing, and the
+  backfill silently stops. Rewrite it as `NOT EXISTS` in step 1.4.
+- `INSERT ... ON CONFLICT` uses up a `users.id` number even when it only updates, so ids
+  have gaps. That's cosmetic, and BIGINT never runs out.
 
 Tests (integration, real Postgres):
 - ☐ Create the **old** schema and insert fixture data (2 users, CVs, an active CV,
