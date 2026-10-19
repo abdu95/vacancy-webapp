@@ -24,6 +24,8 @@ Status key: ☐ todo · ☑ done
    its token in staging's `TELEGRAM_TOKEN` (bot and webapp). A copied prod token would
    make the staging bot fight the prod bot for updates, and real users' messages would land on staging.
    Staging's payme-webhook uses only `PAYME_TEST_KEY`.
+   ⚠ Staging's database is a copy of prod, so it contains real users' Telegram IDs.
+   The daily vacancy-alerts loop must be **off** in staging, or it messages real people.
 2. ☐ **Restore a prod copy into staging Postgres.** Run `pg_dump` on prod, then
    `pg_restore` into staging. Every migration step is rehearsed here first.
 3. ☑ **Record the live `orders` schema.** Done 2026-10-19: `orders` and `payme_transactions`

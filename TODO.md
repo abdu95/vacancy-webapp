@@ -2,6 +2,16 @@
 
 Deferred from the web launch plan (docs/web-launch-plan.md, 2026-10-19).
 
+- [ ] **Commit the pre-existing uncommitted work in this repo** (left out of the
+      2026-10-19 commits on purpose, since it wasn't part of that work):
+      - `.claude/agents/` (`qa-tester.md`, `user-simulator.md`): the QA/persona subagents.
+      - `tests/e2e/`: the Playwright smoke/payment harness. `.env` and `node_modules/`
+        are already gitignored; check nothing secret is in the other files before committing.
+      - `tests/test_ai_utils.py`: **review first, don't just commit.** The uncommitted
+        change *deletes* the `with_language_for_fixes` regression test (the 2026-09-26
+        mixed-language CV-fix bug, fixed in `821dfc2`). This is probably accidental, so
+        `git checkout tests/test_ai_utils.py` is likely the right move.
+
 - [ ] **Email channel for web users.** Provider (Resend/Postmark), SPF/DKIM/DMARC on
       the domain, one-click unsubscribe + `List-Unsubscribe` header. Vacancy alerts
       route by channel (Telegram if `telegram_id`, else email). Then un-hide Vacancy
