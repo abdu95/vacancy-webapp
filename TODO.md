@@ -12,7 +12,9 @@ Deferred from the web launch plan (docs/web-launch-plan.md, 2026-10-19).
         mixed-language CV-fix bug, fixed in `821dfc2`). This is probably accidental, so
         `git checkout tests/test_ai_utils.py` is likely the right move.
 
-- [ ] **Stop logging the bot token (security).** The prod bot's Railway logs print the
+- [ ] **Rotate the bot token (security).** Code part done 2026-10-19: httpx is set to WARNING in
+      both bot.py and app/main.py, with tests. Remaining: the token below, already exposed in old logs.
+      Original note: The prod bot's Railway logs print the
       full Telegram token on every poll (`httpx` logs each `POST .../bot<TOKEN>/getUpdates`
       URL at INFO). Anyone who can read the logs can control the bot. Fix:
       `logging.getLogger("httpx").setLevel(logging.WARNING)` in `ae-coach-bot/bot/bot.py`,

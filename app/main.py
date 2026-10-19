@@ -18,6 +18,10 @@ from app.services import vacancy_alerts
 from app.routes import alerts, analysis, applications, checks, cvs, payments, vacancy_search
 
 logging.basicConfig(level=logging.INFO)
+# httpx logs every request URL at INFO, and vacancy_alerts' sendMessage URL
+# contains the bot token (/bot<TOKEN>/sendMessage), so INFO leaks the token
+# into Railway's logs. WARNING still logs failures.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Cache-busting version tag for /static/app.js and style.css - tied to
