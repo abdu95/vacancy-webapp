@@ -145,7 +145,7 @@ All statements are idempotent (`IF NOT EXISTS`), because `init_db` runs on every
 - ☑ Staging (prod copy): 0 unlinked rows in all 6 tables, counts unchanged, orphan 99999003
   backfilled, and the migrated schema is identical to a fresh `init_db()`. `smoke.js` and
   `smoke-payment.js` pass against staging, and the new test user and sandbox order were auto-linked.
-- ☑ Prod (2026-10-19 13:51 UTC): self-made backup `~/chashma-backups/prod-before-step-1.2-20261019T1350Z.sql`, test-restored locally with row counts identical to prod. Pushed. On prod: 0 unlinked rows in all 6 tables, counts unchanged, users 217→218 (orphan placeholder), health 200, smoke.js passes. `prod_schema.json` re-captured.
+- ☑ Prod (2026-10-19 13:51 UTC): self-made backup `ae coach bot/chashma-backups/prod-before-step-1.2-20261019T1350Z.sql` (outside all three repos), test-restored locally with row counts identical to prod. Pushed. On prod: 0 unlinked rows in all 6 tables, counts unchanged, users 217→218 (orphan placeholder), health 200, smoke.js passes. `prod_schema.json` re-captured.
 
 Rollback (additive, so it's safe to run while the old code is live):
 ```sql
@@ -201,6 +201,29 @@ Tests:
 - Deploy in any order (both columns stay filled). Staging first, then prod, then smoke tests
   (`smoke.js`, `smoke-payment.js`), then a manual pass with your own Telegram account.
 
+**Status (2026-10-19): ☑ done, all four parts in prod.** How it was actually built:
+1. **Schema** (`ae-coach-bot` `2146ab9`): the trigger fills **both directions**, so code
+   switched to `user_id` writes only `user_id` and `telegram_id` still gets filled for code
+   that hasn't switched yet. Adds the `user_id` twins of the two uniqueness rules:
+   `idx_cvs_one_active_per_user_id` and `alerted_vacancies_user_id_vacancy_url_key`.
+   `schema_snapshot` now records full trigger definitions.
+2. **webapp** (`d0c2801`): `authenticate()` adds `user["user_id"]` (from `ensure_user ... RETURNING id`).
+   `user["id"]` stays the Telegram id, used only for Telegram. All `app/db/*` functions take
+   `user_id`. Inserts write only `user_id`; the trigger fills `telegram_id`.
+3. **bot** (`07d45de`): events and orders inserts set `user_id` and `telegram_id`, and the
+   pending-order lookup and `/stats` unique counts use `user_id`. Users-table lookups stay on
+   `telegram_id` (the bot only serves Telegram users). The planned `get_or_create_user_id`
+   helper wasn't needed.
+4. **payme-webhook** (`ba698db`): credits and refunds by the order's `user_id`, falling back to
+   `telegram_id` for orders without one. The notification is skipped when there's no `telegram_id`.
+
+Tests: mocked route tests use an internal id (9001) that differs from the Telegram id (777).
+`vacancy-webapp/tests/integration/test_db_real_postgres.py` covers every db function plus
+the id-taking routes for users A and B, and fails when an owner filter is deliberately broken.
+`payme-webhook/tests/integration/test_payme_real_postgres.py` runs the full Payme sequence.
+Staging: smoke, sandbox payment, and a manual pass with a real account (CVs, checks,
+applications, alerts, `/start`). Prod: backup `prod-before-step-1.3-20261019T1425Z.sql`, then pushed in the order webapp, payme, bot.
+
 ### Step 1.4: Contract (DB, shipped from `schema.py`, guarded so it runs once)
 - ☐ Child tables: `user_id SET NOT NULL`, add FK `REFERENCES users(id)`, drop the old
   FK to `users(telegram_id)`.
@@ -219,9 +242,9 @@ Tests:
 
 Before every prod step: take a backup. Railway's built-in backups need the Pro plan, so make one ourselves:
 ```bash
-mkdir -p ~/chashma-backups && chmod 700 ~/chashma-backups && umask 077
+B="$HOME/Mac files/My Projects/ae coach bot/chashma-backups"; mkdir -p "$B" && chmod 700 "$B" && umask 077
 railway ssh -s Postgres -e production -- 'pg_dump -U "$POSTGRES_USER" -d "$PGDATABASE" --no-owner --no-privileges' \
-  > ~/chashma-backups/prod-before-<step>-$(date -u +%Y%m%dT%H%MZ).sql
+  > "$B"/prod-before-<step>-$(date -u +%Y%m%dT%H%MZ).sql
 ```
 Then test-restore it into a local scratch DB and compare row counts with prod. The file has
 real CVs, so it never goes in a repo or a shared folder.

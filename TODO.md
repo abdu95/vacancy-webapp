@@ -20,6 +20,13 @@ Deferred from the web launch plan (docs/web-launch-plan.md, 2026-10-19).
       `logging.getLogger("httpx").setLevel(logging.WARNING)` in `ae-coach-bot/bot/bot.py`,
       then rotate the token in BotFather (`/revoke`) and update `TELEGRAM_TOKEN` in
       ae-coach-bot and vacancy-webapp and `BOT_TOKEN` in payme-webhook.
+- [ ] **e2e harness uses a stale Payme sandbox key against prod.** Payme rotated the sandbox
+      password on 2026-08-14 (ChangePassword), and payme-webhook stored the new one in
+      `payme_credentials`, which overrides the `PAYME_TEST_KEY` env var. `tests/e2e/pull-env.sh`
+      still pulls the env var, so `smoke-payment.js` against prod fails with -32504. Fix:
+      pull-env.sh reads the `PAYME_TEST_KEY` row from `payme_credentials` (via `railway ssh`)
+      when it exists. Optionally update the Railway env var to the rotated value too.
+      (Staging is unaffected because its copy has no `payme_credentials` rows.)
 - [ ] **Prod vacancy-webapp `DATABASE_URL` is a hard-coded literal** (the other services
       use `${{Postgres.DATABASE_URL}}`). Switch it to the reference so a password rotation
       or environment copy can't leave it pointing at the wrong database. Staging already uses the reference.
