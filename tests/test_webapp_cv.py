@@ -142,7 +142,8 @@ print("PASS: suggest-titles requires a CV on file")
 
 # --- Test 9: search passes seen_companies through to vacancy_source ---
 from app.services import vacancy_source  # noqa: E402
-with mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(return_value=[])) as m_search:
+with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
+     mock.patch.object(vacancy_source, "search_vacancies", new=mock.AsyncMock(return_value=[])) as m_search:
     resp = client.post("/api/search", json={
         "init_data": init_data, "job_title": "Data Analyst", "location": "Remote",
         "seen_companies": ["Acme", "Globex"],

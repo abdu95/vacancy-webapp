@@ -243,7 +243,7 @@ with mock.patch.object(db, "ensure_user", return_value=INTERNAL_USER_ID), \
      mock.patch.object(db, "get_quota_status", return_value=(1, 3)):
     resp = client.post("/api/quota-status", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"remaining": 2, "quota": 3, "price_per_check_tiyin": 1_000_000}
+    assert resp.json() == {"remaining": 2, "quota": 3, "price_per_check_tiyin": 1_000_000, "channel": "telegram"}
 print("PASS: quota-status reports remaining/quota/price correctly")
 
 # --- Test 10: checkout builds a correctly-priced order and a real Payme URL ---

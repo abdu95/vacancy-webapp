@@ -26,7 +26,7 @@ async function uploadCV() {
   scrollToBottom();
 
   const formData = new FormData();
-  formData.append("init_data", tg.initData);
+  formData.append("init_data", INIT_DATA);
   formData.append("file", file);
 
   const controller = new AbortController();
@@ -193,7 +193,7 @@ async function uploadNewCv() {
   scrollToBottom();
 
   const formData = new FormData();
-  formData.append("init_data", tg.initData);
+  formData.append("init_data", INIT_DATA);
   formData.append("file", file);
 
   const controller = new AbortController();

@@ -19,6 +19,18 @@ if (tg) {
   tg.ready();
   tg.expand();
 }
+// Inside Telegram, initData identifies the user on every request. In a
+// plain browser (app.chashma.uz) there is none: the user signs in with
+// Google instead and a session cookie does the identifying (see web.js).
+// telegram-web-app.js still defines Telegram.WebApp outside Telegram, just
+// with empty initData - hence checking initData, not tg.
+const INIT_DATA = (tg && tg.initData) || "";
+const IS_WEB = !INIT_DATA;
+if (IS_WEB) {
+  document.body.classList.add("web-mode");
+  document.title = "Chashma";
+  document.getElementById("greeting").textContent = "Chashma";
+}
 
 const state = {
   jobTitle: "", seenCompanies: [], searchCount: 0, lastSearchLocation: null,
@@ -34,7 +46,7 @@ const MIN_CHECKS_PURCHASE = 1;
 const MAX_CHECKS_PURCHASE = 100;
 
 const ALL_SCREENS = [
-  "loading-gate", "welcome-screen", "cv-gate", "home-screen", "checks-screen",
+  "loading-gate", "signin-screen", "onboarding-screen", "welcome-screen", "cv-gate", "home-screen", "checks-screen",
   "profile-screen", "my-cvs-screen", "my-checks-screen", "vacancy-alerts-screen", "analysis-screen",
   "title-screen", "search-screen", "applications-screen",
 ];
@@ -53,7 +65,7 @@ const SCREEN_TO_TAB = {
   "vacancy-alerts-screen": "profile",
 };
 
-const HIDE_TAB_BAR_ON = new Set(["loading-gate", "welcome-screen"]);
+const HIDE_TAB_BAR_ON = new Set(["loading-gate", "welcome-screen", "signin-screen", "onboarding-screen"]);
 
 function showScreen(id) {
   for (const s of ALL_SCREENS) {
@@ -145,16 +157,13 @@ async function refreshChecksHeader() {
 }
 
 async function checkCVAndRoute() {
-  if (!tg || !tg.initData) {
-    document.getElementById("loading-gate").innerHTML =
-      `<div class="error">${escapeHtml(t("open_from_bot"))}</div>`;
-    return;
-  }
   try {
+    // Browser mode: sign in / onboard first; those screens call this again when done.
+    if (IS_WEB && !(await ensureWebSession())) return;
     const res = await fetch("/api/cv-status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: tg.initData }),
+      body: JSON.stringify({ init_data: INIT_DATA }),
     });
     if (!res.ok) throw new Error("status check failed");
     const data = await res.json();
@@ -164,7 +173,7 @@ async function checkCVAndRoute() {
 
     // Prefer the name the user gave the bot; Telegram's first_name is
     // only a fallback for users who never went through the bot's name step.
-    const greetingName = data.name || tg.initDataUnsafe?.user?.first_name;
+    const greetingName = data.name || tg?.initDataUnsafe?.user?.first_name;
     if (greetingName) {
       document.getElementById("greeting").textContent = t("greeting", { name: greetingName });
     }
@@ -203,6 +212,11 @@ checkCVAndRoute();
 // things.
 function showProfile() {
   showScreen("profile-screen");
+  if (IS_WEB) {
+    // Alerts are Telegram messages - nothing to deliver them to yet for browser users.
+    document.getElementById("profile-vacancy-alerts-btn").hidden = true;
+    renderWebProfile();
+  }
 }
 async function callApi(path, body, btn) {
   if (btn) btn.disabled = true;
@@ -212,7 +226,7 @@ async function callApi(path, body, btn) {
     const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ init_data: tg.initData, ...body }),
+      body: JSON.stringify({ init_data: INIT_DATA, ...body }),
       signal: controller.signal,
     });
     if (!res.ok) {

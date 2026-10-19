@@ -42,6 +42,16 @@ from app.db.alerts import (
 )
 from app.db.payments import get_or_create_order
 from app.db.events import log_event
+from app.db.web_accounts import (
+    WEB_FREE_LIMIT,
+    complete_onboarding,
+    create_session,
+    delete_session,
+    get_account,
+    get_session_user,
+    join_waitlist,
+    upsert_google_user,
+)
 
 __all__ = [
     "get_pool",
@@ -52,6 +62,8 @@ __all__ = [
     "filter_new_vacancy_urls", "get_alert_batch", "get_saved_search", "list_users_with_alerts_enabled",
     "mark_vacancies_alerted", "save_search_criteria",
     "get_or_create_order", "log_event",
+    "WEB_FREE_LIMIT", "complete_onboarding", "create_session", "delete_session", "get_account",
+    "get_session_user", "join_waitlist", "upsert_google_user",
     "get_active_companies", "check_connection",
 ]
 

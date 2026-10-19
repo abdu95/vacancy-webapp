@@ -302,3 +302,11 @@ input[type="file"] { border: none; padding: 8px 0; background: none; }
 button.icon-row, .menu-option .icon-row, .nav-chip.icon-row { width: 100%; justify-content: center; }
 .icon-row-top { display: flex; align-items: flex-start; gap: 8px; }
 .icon-row-top .icon { margin-top: 2px; }
+
+/* Browser mode (app.chashma.uz): on a laptop the phone-sized layout would
+   stretch edge to edge - keep it in a centered column, tab bar included. */
+body.web-mode { max-width: 520px; margin: 0 auto; }
+body.web-mode #tab-bar { max-width: 520px; margin: 0 auto; }
+#google-signin-btn { margin: 16px 0; min-height: 44px; }
+#signin-lang select, #onboarding-lang select, #profile-web-account select { margin: 8px 0 12px; }
+#profile-web-account { margin-top: 16px; }

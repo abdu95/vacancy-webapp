@@ -15,7 +15,7 @@ load_dotenv()
 
 from app import db
 from app.services import vacancy_alerts
-from app.routes import alerts, analysis, applications, checks, cvs, payments, vacancy_search
+from app.routes import alerts, analysis, applications, checks, cvs, payments, vacancy_search, web_auth
 
 logging.basicConfig(level=logging.INFO)
 # httpx logs every request URL at INFO, and vacancy_alerts' sendMessage URL
@@ -36,7 +36,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 app = FastAPI()
 
 for router in (cvs.router, vacancy_search.router, applications.router, analysis.router,
-               checks.router, alerts.router, payments.router):
+               checks.router, alerts.router, payments.router, web_auth.router):
     app.include_router(router)
 
 # Daily vacancy-alerts scheduler. In-process asyncio loop rather than a new

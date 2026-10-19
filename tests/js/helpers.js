@@ -13,7 +13,7 @@ const STATIC_DIR = path.resolve(__dirname, "..", "..", "app", "static");
 // so the eval'd code sees the same load order the real page does.
 const APP_SCRIPTS = [
   "icons.js", "i18n.js", "checks.js", "vacancy-alerts.js", "cv-upload.js",
-  "applications.js", "vacancy-search.js", "analysis.js", "core.js",
+  "applications.js", "vacancy-search.js", "analysis.js", "web.js", "core.js",
 ];
 
 /**
@@ -36,7 +36,7 @@ const APP_SCRIPTS = [
  * jsdom's runScripts: "dangerously" executes them the same way a
  * browser would.
  */
-function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" }, fetchImpl, url = "https://example.com/" } = {}) {
+function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" }, fetchImpl, url = "https://example.com/", initData = "mock_init_data", navigatorLanguage, beforeScripts } = {}) {
   let rawHtml = fs.readFileSync(path.join(STATIC_DIR, "index.html"), "utf8");
   rawHtml = rawHtml.replace(/<script[^>]*><\/script>/g, "");
   rawHtml = rawHtml.replace(/<link[^>]*>/g, "");
@@ -53,7 +53,7 @@ function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" },
 
   window.Telegram = {
     WebApp: {
-      initData: "mock_init_data",
+      initData,  // "" = a plain browser (web mode): telegram-web-app.js defines WebApp but with no initData
       initDataUnsafe: { user },
       ready() {},
       expand() {},
@@ -69,6 +69,8 @@ function loadApp({ user = { id: 777, first_name: "Test", username: "testuser" },
   window.scrollTo = () => {};
 
   window.fetch = fetchImpl || defaultFetchMock();
+  if (navigatorLanguage) Object.defineProperty(window.navigator, "language", { value: navigatorLanguage, configurable: true });
+  if (beforeScripts) beforeScripts(window);  // e.g. stand-ins for external SDKs (Google sign-in)
 
   for (const file of APP_SCRIPTS) {
     const scriptEl = window.document.createElement("script");

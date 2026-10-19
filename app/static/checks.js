@@ -14,7 +14,9 @@ async function showChecksScreen() {
         <div>${escapeHtml(freeChecksLine(q.remaining))}</div>
       </div>
     `;
-    if (q.remaining <= 0) {
+    if (q.channel === "web" && q.remaining > 0) {
+      // Nothing to buy on the web yet; the waitlist appears once checks run out.
+    } else if (q.remaining <= 0) {
       const buyBox = document.createElement("div");
       buyBox.style.marginTop = "12px";
       contentEl.appendChild(buyBox);
@@ -194,6 +196,8 @@ document.addEventListener("visibilitychange", () => {
 });
 
 async function renderBuyChecks(containerEl) {
+  // Browser users can't pay yet (Payme is Uzbek cards only): offer the waitlist instead.
+  if (IS_WEB) return renderWaitlist(containerEl);
   containerEl.innerHTML = `<div id="buy-checks-box"><div class="hint">…</div></div>`;
   const box = document.getElementById("buy-checks-box");
   try {

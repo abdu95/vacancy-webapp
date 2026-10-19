@@ -15,6 +15,25 @@
 
   <div id="loading-gate"><div class="spinner"></div></div>
 
+  <!-- Browser (non-Telegram) mode only - see web.js -->
+  <div id="signin-screen" hidden>
+    <h3 id="signin-title"></h3>
+    <div class="hint" id="signin-body"></div>
+    <div id="google-signin-btn"></div>
+    <div id="signin-error"></div>
+    <div id="signin-lang"></div>
+  </div>
+
+  <div id="onboarding-screen" hidden>
+    <h3 id="onboarding-title"></h3>
+    <label for="onboarding-name" id="onboarding-name-label"></label>
+    <input type="text" id="onboarding-name" maxlength="60" autocomplete="given-name" />
+    <label for="onboarding-lang-select" id="onboarding-lang-label"></label>
+    <div id="onboarding-lang"></div>
+    <button id="onboarding-continue-btn" onclick="submitOnboarding()"></button>
+    <div id="onboarding-result"></div>
+  </div>
+
   <div id="welcome-screen" hidden>
     <div class="hint" id="welcome-body"></div>
     <button id="welcome-continue-btn" onclick="activateTab('home')"></button>
@@ -67,9 +86,10 @@
     <button class="menu-option" onclick="showApplications()">
       <div id="profile-my-applications-label"></div>
     </button>
-    <button class="menu-option" onclick="showVacancyAlerts()">
+    <button class="menu-option" id="profile-vacancy-alerts-btn" onclick="showVacancyAlerts()">
       <div id="profile-vacancy-alerts-label"></div>
     </button>
+    <div id="profile-web-account" hidden></div>
   </div>
 
   <div id="my-cvs-screen" hidden>
@@ -210,6 +230,7 @@
   <script src="/static/applications.js"></script>
   <script src="/static/vacancy-search.js"></script>
   <script src="/static/analysis.js"></script>
+  <script src="/static/web.js"></script>
   <script src="/static/core.js"></script>
 </body>
 </html>

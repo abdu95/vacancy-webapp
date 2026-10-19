@@ -5,7 +5,7 @@ table payme-webhook reads from)."""
 import base64
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import db
@@ -21,28 +21,33 @@ MAX_CHECKS_PURCHASE = 100
 
 
 class QuotaStatusRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
 
 
 @router.post("/api/quota-status")
-async def quota_status(req: QuotaStatusRequest):
-    user = authenticate(req.init_data)
+async def quota_status(req: QuotaStatusRequest, request: Request):
+    user = authenticate(req.init_data, request)
     usage_count, quota = db.get_quota_status(user["user_id"])
     return {
         "remaining": max(0, quota - usage_count),
         "quota": quota,
         "price_per_check_tiyin": PRICE_PER_CHECK_TIYIN,
+        # 'web' users can't pay yet (Payme is Uzbek cards only): the app
+        # shows them Join waitlist instead of the buy-checks box.
+        "channel": user["channel"],
     }
 
 
 class CheckoutRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     checks: int
 
 
 @router.post("/api/checkout")
-async def checkout(req: CheckoutRequest):
-    user = authenticate(req.init_data)
+async def checkout(req: CheckoutRequest, request: Request):
+    user = authenticate(req.init_data, request)
+    if user["channel"] == "web":
+        raise HTTPException(400, "Buying checks isn't available on the web yet - join the waitlist instead")
     if not (MIN_CHECKS_PURCHASE <= req.checks <= MAX_CHECKS_PURCHASE):
         raise HTTPException(400, f"Choose between {MIN_CHECKS_PURCHASE} and {MAX_CHECKS_PURCHASE} checks")
     if not PAYME_ID:

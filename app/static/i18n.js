@@ -2,10 +2,35 @@
 const I18N = {
   nav_applications: { en: "My Applications", uz: "Arizalarim", ru: "Мои заявки" },
   greeting: { en: "Hi {name}", uz: "Salom, {name}", ru: "Привет, {name}" },
-  open_from_bot: {
-    en: "Open this from the Telegram bot, not a regular browser.",
-    uz: "Buni oddiy brauzerda emas, Telegram bot orqali oching.",
-    ru: "Откройте это через Telegram-бота, а не в обычном браузере.",
+  // Browser (non-Telegram) mode - web.js
+  signin_title: { en: "Welcome to Chashma", uz: "Chashma'ga xush kelibsiz", ru: "Добро пожаловать в Chashma" },
+  signin_body: {
+    en: "Check how well your CV matches a job, get exact fixes, and find real openings. Sign in to start — {quota} free checks.",
+    uz: "CV'ingiz vakansiyaga qanchalik mosligini tekshiring, aniq tuzatishlar oling va real vakansiyalarni toping. Boshlash uchun kiring — {quota} ta bepul tekshiruv.",
+    ru: "Проверьте, насколько ваше резюме подходит под вакансию, получите точные исправления и находите реальные вакансии. Войдите, чтобы начать — {quota} бесплатных проверок.",
+  },
+  signin_failed: {
+    en: "Sign-in didn't work. Please try again.",
+    uz: "Kirish amalga oshmadi. Qaytadan urinib ko'ring.",
+    ru: "Не удалось войти. Попробуйте ещё раз.",
+  },
+  onboarding_title: { en: "Almost done", uz: "Deyarli tayyor", ru: "Почти готово" },
+  onboarding_name_label: { en: "What should we call you?", uz: "Sizga qanday murojaat qilaylik?", ru: "Как к вам обращаться?" },
+  onboarding_lang_label: { en: "Language", uz: "Til", ru: "Язык" },
+  onboarding_continue: { en: "Continue", uz: "Davom etish", ru: "Продолжить" },
+  onboarding_name_required: { en: "Please enter your name.", uz: "Ismingizni kiriting.", ru: "Пожалуйста, введите имя." },
+  profile_signed_in_as: { en: "Signed in as {email}", uz: "Kirgan hisob: {email}", ru: "Вы вошли как {email}" },
+  signout_btn: { en: "Sign out", uz: "Chiqish", ru: "Выйти" },
+  waitlist_intro: {
+    en: "You've used all your free checks. Buying more isn't available on the web yet — join the waitlist and we'll let you know when it is.",
+    uz: "Barcha bepul tekshiruvlaringiz tugadi. Veb-versiyada qo'shimcha tekshiruv sotib olish hozircha mavjud emas — kutish ro'yxatiga qo'shiling, imkoniyat paydo bo'lganda xabar beramiz.",
+    ru: "Вы использовали все бесплатные проверки. Купить ещё в веб-версии пока нельзя — встаньте в лист ожидания, и мы сообщим, когда это станет возможно.",
+  },
+  waitlist_btn: { en: "Join the waitlist", uz: "Kutish ro'yxatiga qo'shilish", ru: "Встать в лист ожидания" },
+  waitlist_joined: {
+    en: "You're on the waitlist — we'll let you know as soon as you can get more checks.",
+    uz: "Siz kutish ro'yxatidasiz — qo'shimcha tekshiruvlar mavjud bo'lishi bilan xabar beramiz.",
+    ru: "Вы в листе ожидания — мы сообщим, как только можно будет получить больше проверок.",
   },
   cv_gate_hint: {
     en: "Recruiters spend about 7 seconds scanning a CV — good candidates often get "
@@ -509,6 +534,10 @@ function t(key, vars) {
   if (vars) {
     for (const k in vars) text = text.replace(`{${k}}`, vars[k]);
   }
+  // The browser version (app.chashma.uz) is branded Chashma only; the
+  // Telegram Mini App keeps its current name until it's rebranded too.
+  // IS_WEB is defined by core.js, which loads last.
+  if (typeof IS_WEB !== "undefined" && IS_WEB) text = text.replace(/Accepted ?AI/g, "Chashma");
   return text;
 }
 

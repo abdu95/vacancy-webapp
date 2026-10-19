@@ -3,11 +3,11 @@ against one found vacancy."""
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import db
-from app.auth import verify_init_data, authenticate
+from app.auth import authenticate
 from app.services import cv_fixes, hypothesis, scoring, vacancy_source  # vacancy_source - see its docstring
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 class SearchRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     job_title: str
     location: str = "Any"
     work_setup: str = "Any"
@@ -24,8 +24,8 @@ class SearchRequest(BaseModel):
 
 
 @router.post("/api/search")
-async def search(req: SearchRequest):
-    verify_init_data(req.init_data)  # confirms the request really came from Telegram
+async def search(req: SearchRequest, request: Request):
+    authenticate(req.init_data, request)  # a signed-in user: Telegram initData or web session
 
     try:
         vacancies = await vacancy_source.search_vacancies(
@@ -40,12 +40,12 @@ async def search(req: SearchRequest):
 
 
 class SuggestTitlesRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
 
 
 @router.post("/api/suggest-titles")
-async def suggest_titles(req: SuggestTitlesRequest):
-    user = authenticate(req.init_data)
+async def suggest_titles(req: SuggestTitlesRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
@@ -68,13 +68,13 @@ class Vacancy(BaseModel):
 
 
 class ScoreRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     vacancy: Vacancy
 
 
 @router.post("/api/score-vacancy")
-async def score_vacancy_endpoint(req: ScoreRequest):
-    user = authenticate(req.init_data)
+async def score_vacancy_endpoint(req: ScoreRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
@@ -90,14 +90,14 @@ async def score_vacancy_endpoint(req: ScoreRequest):
 
 
 class RecommendationsRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     vacancy: Vacancy
     level: str
 
 
 @router.post("/api/cv-recommendations")
-async def cv_recommendations(req: RecommendationsRequest):
-    user = authenticate(req.init_data)
+async def cv_recommendations(req: RecommendationsRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")

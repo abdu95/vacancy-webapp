@@ -3,7 +3,7 @@ one roadmap item at a time)."""
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import db
@@ -15,13 +15,13 @@ router = APIRouter()
 
 
 class AnalyzeRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     jd: str
 
 
 @router.post("/api/cv-jd-analysis")
-async def cv_jd_analysis(req: AnalyzeRequest):
-    user = authenticate(req.init_data)
+async def cv_jd_analysis(req: AnalyzeRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")
@@ -71,7 +71,7 @@ async def cv_jd_analysis(req: AnalyzeRequest):
 
 
 class RoadmapItemRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     jd: str
     level: str
     item: int
@@ -79,8 +79,8 @@ class RoadmapItemRequest(BaseModel):
 
 
 @router.post("/api/roadmap-item")
-async def roadmap_item(req: RoadmapItemRequest):
-    user = authenticate(req.init_data)
+async def roadmap_item(req: RoadmapItemRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"])
     if not cv_text:
         raise HTTPException(400, "No CV on file - upload one first")

@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from app import db
@@ -21,14 +21,14 @@ class Vacancy(BaseModel):
 
 
 class ApplyRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     vacancy: Vacancy
     score: dict | None = None
 
 
 @router.post("/api/apply")
-async def apply(req: ApplyRequest):
-    user = authenticate(req.init_data)
+async def apply(req: ApplyRequest, request: Request):
+    user = authenticate(req.init_data, request)
     cv_text = db.get_active_cv_text(user["user_id"]) or ""
 
     try:
@@ -41,12 +41,12 @@ async def apply(req: ApplyRequest):
 
 
 class ApplicationsRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
 
 
 @router.post("/api/applications")
-async def list_applications(req: ApplicationsRequest):
-    user = authenticate(req.init_data)
+async def list_applications(req: ApplicationsRequest, request: Request):
+    user = authenticate(req.init_data, request)
     try:
         applications = db.list_applications(user["user_id"])
     except Exception:
@@ -56,14 +56,14 @@ async def list_applications(req: ApplicationsRequest):
 
 
 class UpdateApplicationStatusRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     application_id: int
     status: str
 
 
 @router.post("/api/applications/update-status")
-async def update_application_status(req: UpdateApplicationStatusRequest):
-    user = authenticate(req.init_data)
+async def update_application_status(req: UpdateApplicationStatusRequest, request: Request):
+    user = authenticate(req.init_data, request)
     if req.status not in db.VALID_STATUSES:
         raise HTTPException(400, "Invalid status")
     found = db.update_application_status(user["user_id"], req.application_id, req.status)
@@ -73,13 +73,13 @@ async def update_application_status(req: UpdateApplicationStatusRequest):
 
 
 class DeleteApplicationRequest(BaseModel):
-    init_data: str
+    init_data: str = ""
     application_id: int
 
 
 @router.post("/api/applications/delete")
-async def delete_application(req: DeleteApplicationRequest):
-    user = authenticate(req.init_data)
+async def delete_application(req: DeleteApplicationRequest, request: Request):
+    user = authenticate(req.init_data, request)
     found = db.delete_application(user["user_id"], req.application_id)
     if not found:
         raise HTTPException(404, "Application not found")

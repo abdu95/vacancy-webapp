@@ -96,11 +96,6 @@ async function search() {
   const resultEl = document.getElementById("result");
   const btn = document.getElementById("search_btn");
 
-  if (!tg || !tg.initData) {
-    resultEl.innerHTML = `<div class="error">${escapeHtml(t("open_from_bot"))}</div>`;
-    return;
-  }
-
   // Real bug (2026-09-10): changing location and searching again never
   // cleared the previous location's accumulated results. A location that
   // genuinely has nothing (0 new matches) fell through to the "no NEW
@@ -436,7 +431,7 @@ async function uploadImprovedCV() {
   resultEl.innerHTML = bigLoader("file-text", t("reading_updated_cv"));
   scrollToBottom();
   const formData = new FormData();
-  formData.append("init_data", tg.initData);
+  formData.append("init_data", INIT_DATA);
   formData.append("file", file);
 
   const controller = new AbortController();
