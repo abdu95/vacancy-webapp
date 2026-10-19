@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 import time
 from datetime import datetime, timedelta, timezone
@@ -58,6 +59,11 @@ async def _vacancy_alerts_loop() -> None:
 
 @app.on_event("startup")
 async def _start_background_jobs() -> None:
+    # Off in staging (VACANCY_ALERTS_ENABLED=0): its database is a copy of
+    # prod's, full of real users' telegram_ids. Unset = on, so prod needs no change.
+    if os.getenv("VACANCY_ALERTS_ENABLED", "1") == "0":
+        logger.info("Daily vacancy alerts disabled (VACANCY_ALERTS_ENABLED=0)")
+        return
     asyncio.create_task(_vacancy_alerts_loop())
 
 
