@@ -34,10 +34,11 @@ init_data = build_init_data('{"id":777,"first_name":"Test","username":"testuser"
 # --- Test 1: cv-status with no CV -> has_cv False, ensure_user called ---
 with mock.patch.object(db, "ensure_user") as m_ensure, \
      mock.patch.object(db, "get_active_cv_text", return_value=None) as m_get, \
-     mock.patch.object(db, "get_user_language", return_value="en"):
+     mock.patch.object(db, "get_user_language", return_value="en"), \
+     mock.patch.object(db, "get_user_name", return_value=None):
     resp = client.post("/api/cv-status", json={"init_data": init_data})
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"has_cv": False, "lang": "en"}
+    assert resp.json() == {"has_cv": False, "lang": "en", "name": None}
     m_ensure.assert_called_once_with(777, "testuser", "Test")
     m_get.assert_called_once_with(777)
 print("PASS: cv-status (no CV) ensures user and returns has_cv=False")
@@ -45,10 +46,11 @@ print("PASS: cv-status (no CV) ensures user and returns has_cv=False")
 # --- Test 2: cv-status with a CV on file -> has_cv True ---
 with mock.patch.object(db, "ensure_user"), \
      mock.patch.object(db, "get_active_cv_text", return_value="Some CV text"), \
-     mock.patch.object(db, "get_user_language", return_value="ru"):
+     mock.patch.object(db, "get_user_language", return_value="ru"), \
+     mock.patch.object(db, "get_user_name", return_value="Aziza"):
     resp = client.post("/api/cv-status", json={"init_data": init_data})
-    assert resp.json() == {"has_cv": True, "lang": "ru"}
-print("PASS: cv-status (has CV) returns has_cv=True and the user's language")
+    assert resp.json() == {"has_cv": True, "lang": "ru", "name": "Aziza"}
+print("PASS: cv-status (has CV) returns has_cv=True, the user's language and bot-given name")
 
 # --- Test 3: cv-status with tampered signature -> 401 ---
 tampered = init_data.replace("Test", "Evil")
