@@ -259,7 +259,13 @@ Status (2026-10-19): ☑ `test_user_id_contract.py` (browser-style user with no 
 enforcement, telegram_id upserts, orphan rule, legacy backfill, re-runs), mutation-checked.
 All suites pass in all three repos. ☑ Staging: PK on `id`, `UNIQUE (telegram_id)`, 6 user_id FKs,
 0 old FKs, 1 index on `users.id`, counts unchanged; `smoke.js` and `smoke-payment.js` pass.
-☐ Prod.
+☑ Prod (2026-10-19 14:53 UTC): backup `prod-before-step-1.4-20261019T1452Z.sql` (test-restored),
+then pushed. Prod now has PK on `id`, `UNIQUE (telegram_id)`, 6 user_id FKs, 0 old FKs, 1 index on
+`users.id`, counts equal to the backup, health 200, no non-handover errors, and `smoke.js` and
+`smoke-payment.js` pass. `prod_schema.json` re-captured.
+
+**Phase 1 complete (2026-10-19).** Every user has an internal id, all data is keyed by it,
+and a user with no Telegram account can now exist. Next: Phase 2 (Sign in with Google).
 
 Rollback, only valid while every user still has a `telegram_id` (i.e. before Phase 2 creates
 browser users). Revert `91b6282` first, or the next restart re-applies it:
