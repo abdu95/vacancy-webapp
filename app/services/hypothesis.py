@@ -9,12 +9,11 @@ import os
 import anthropic
 from dotenv import load_dotenv
 
-from app.services.ai_utils import extract_json
+from app.services.ai_utils import MODEL, NO_THINKING, extract_json, response_text
 
 load_dotenv()
 
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-MODEL = "claude-sonnet-4-5"
 
 JOB_TITLE_PROMPT = """
 Analyze this CV and suggest exactly 5 job titles this candidate is most suited for,
@@ -26,15 +25,17 @@ Example: ["Data Analyst", "Analytics Engineer", "Data Engineer", "BI Developer",
 
 
 async def suggest_job_titles(cv_text: str) -> list:
-    # No temperature pin here on purpose - the "suggest again" button in the
-    # UI expects a genuinely different set of 5 titles on each click, not the
-    # same ones deterministically.
+    # The "suggest again" button in the UI expects a genuinely different set
+    # of 5 titles on each click, so don't add anything here that makes the
+    # output deterministic.
     response = await client.messages.create(
         model=MODEL,
         max_tokens=200,
+        thinking=NO_THINKING,
+        output_config={"effort": "low"},
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{JOB_TITLE_PROMPT}"}],
     )
-    return extract_json(response.content[0].text, array=True)
+    return extract_json(response_text(response), array=True)
 
 
 CURRENT_POSITION_PROMPT = """
@@ -54,7 +55,8 @@ async def extract_current_position(cv_text: str) -> str:
     response = await client.messages.create(
         model=MODEL,
         max_tokens=30,
-        temperature=0.3,
+        thinking=NO_THINKING,
+        output_config={"effort": "low"},
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{CURRENT_POSITION_PROMPT}"}],
     )
-    return response.content[0].text.strip().strip('"')
+    return response_text(response).strip().strip('"')

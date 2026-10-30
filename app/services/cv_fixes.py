@@ -29,12 +29,11 @@ from app.prompts.analysis import (
     ROADMAP_MID_CONTEXT as _MID_CONTEXT,
     ROADMAP_SENIOR_CONTEXT as _SENIOR_CONTEXT,
 )
-from app.services.ai_utils import cv_jd_content_blocks, extract_json, with_language_for_fixes
+from app.services.ai_utils import MODEL, NO_THINKING, cv_jd_content_blocks, extract_json, with_language_for_fixes, response_text
 
 load_dotenv()
 
 client = anthropic.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-MODEL = "claude-sonnet-4-5"
 
 _ITEM_TEMPLATE = """
 The candidate's CV and the target job description (JD) are provided.
@@ -68,11 +67,12 @@ _PROMPTS = {
 async def generate_cv_fixes(level: str, vacancy: dict, cv_text: str, language: str = "en") -> list:
     prompt = with_language_for_fixes(_PROMPTS.get(level, _PROMPTS["Junior"]), language)
     jd_text = f"{vacancy['title']} at {vacancy['company']}\n{vacancy['summary']}"
-    response = await client.beta.prompt_caching.messages.create(
+    response = await client.messages.create(
         model=MODEL,
         max_tokens=900,
-        temperature=0.3,
+        thinking=NO_THINKING,
+        output_config={"effort": "high"},
         messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd_text, prompt)}],
     )
-    text = response.content[0].text
+    text = response_text(response)
     return extract_json(text, array=True)

@@ -115,7 +115,7 @@ assert matched == [] and missing == []
 print("PASS: verify_keywords handles empty lists")
 
 
-# --- End-to-end: analyze_cv actually calls verify_keywords and passes temperature ---
+# --- End-to-end: analyze_cv actually calls verify_keywords and sends the Sonnet 5.5 settings ---
 
 import os  # noqa: E402
 os.environ.setdefault("ANTHROPIC_API_KEY", "dummy")
@@ -125,7 +125,12 @@ from app.services import cv_analysis, scoring  # noqa: E402
 
 
 def _fake_response(text: str):
-    return SimpleNamespace(content=[SimpleNamespace(text=text)])
+    # A thinking block first, like newer models can send - the code must
+    # read the text block, not blindly take content[0].
+    return SimpleNamespace(content=[
+        SimpleNamespace(type="thinking", thinking=""),
+        SimpleNamespace(type="text", text=text),
+    ])
 
 
 async def _run():
@@ -134,27 +139,33 @@ async def _run():
         '"xyz": {"passing": [], "failing": [], "rewrites": []}, '
         '"tools": {}, "level": {"assessment": "Junior", "reasoning": "ok"}}'
     )
-    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         result = await cv_analysis.analyze_cv("some JD", "Built things with Python, no Airflow ever mentioned")
         call_kwargs = m_messages.create.call_args.kwargs
-        assert call_kwargs.get("temperature") == 0.3, call_kwargs
+        # Sonnet 5.5 rejects non-default temperature with a 400.
+        assert "temperature" not in call_kwargs, call_kwargs
+        assert call_kwargs["model"] == "claude-sonnet-5-5", call_kwargs
+        assert call_kwargs["thinking"] == {"type": "between_tools"}, call_kwargs
         # "Java" was never in the CV text -> dropped from matched.
         assert "Java" not in result["ats"]["matched"]
         assert "Python" in result["ats"]["matched"]
 
     fake_score_json = '{"score": 70, "matched": ["Python", "Rust"], "missing": [], "verdict": "ok"}'
-    with mock.patch.object(scoring.client.beta.prompt_caching, "messages") as m_messages:
+    with mock.patch.object(scoring.client, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_score_json))
         result = await scoring.score_vacancy("Built things with Python only", {"title": "t", "company": "c", "summary": "s"})
         call_kwargs = m_messages.create.call_args.kwargs
-        assert call_kwargs.get("temperature") == 0.3, call_kwargs
+        # Sonnet 5.5 rejects non-default temperature with a 400.
+        assert "temperature" not in call_kwargs, call_kwargs
+        assert call_kwargs["model"] == "claude-sonnet-5-5", call_kwargs
+        assert call_kwargs["thinking"] == {"type": "between_tools"}, call_kwargs
         assert "Rust" not in result["matched"]
         assert "Python" in result["matched"]
 
     # The message content must be the 2-block prompt-caching shape: a
     # cacheable CV+JD block, then the call-specific prompt as its own block.
-    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         await cv_analysis.analyze_cv("some JD", "some CV")
         content = m_messages.create.call_args.kwargs["messages"][0]["content"]
@@ -166,7 +177,7 @@ async def _run():
     # analyze_cv's default (language="en") must send the exact same prompt
     # content as before language support existed - no behavior change for
     # existing English users.
-    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         await cv_analysis.analyze_cv("some JD", "some CV")
         default_content = m_messages.create.call_args.kwargs["messages"][0]["content"]
@@ -179,7 +190,7 @@ async def _run():
     # A non-English language must actually change what gets sent, not just
     # be accepted and silently ignored - and must land in the UNcached
     # prompt block, not leak into the cacheable CV+JD block.
-    with mock.patch.object(cv_analysis.client.beta.prompt_caching, "messages") as m_messages:
+    with mock.patch.object(cv_analysis.client, "messages") as m_messages:
         m_messages.create = mock.AsyncMock(return_value=_fake_response(fake_json))
         await cv_analysis.analyze_cv("some JD", "some CV", "ru")
         content = m_messages.create.call_args.kwargs["messages"][0]["content"]
@@ -189,7 +200,7 @@ async def _run():
 
 
 asyncio.run(_run())
-print("PASS: analyze_cv and score_vacancy both pin temperature=0.3 and actually filter hallucinated keywords")
+print("PASS: analyze_cv and score_vacancy use Sonnet 5.5 with thinking off and no temperature, and actually filter hallucinated keywords")
 print("PASS: language threads into the real prompt sent to Claude - English unchanged, ru/uz actually different")
 
 print("\nALL AI_UTILS CHECKS PASSED")

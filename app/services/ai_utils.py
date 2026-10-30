@@ -10,6 +10,21 @@ changes.
 import json
 import re
 
+# The one place the Claude model is set for every AI feature in this service.
+MODEL = "claude-sonnet-5-5"
+
+# Sonnet 5.5 thinks before answering by default. Our calls are single-shot
+# JSON/text generation with tight max_tokens, so thinking only adds latency
+# and could eat the token budget. "between_tools" is Sonnet 5.5's
+# thinking-off setting (it only allows effort "high" or below).
+NO_THINKING = {"type": "between_tools"}
+
+
+def response_text(response) -> str:
+    """Joins the text blocks of a Claude response. Don't use content[0].text:
+    newer models can return non-text blocks (e.g. thinking) before the text."""
+    return "".join(b.text for b in response.content if b.type == "text")
+
 # Maps bot/i18n.py's language codes (also what db.get_user_language()
 # returns) to what to actually tell the model. "en" is intentionally
 # absent - with_language() is a no-op for it, so English generation is
@@ -115,12 +130,10 @@ def cv_jd_content_blocks(cv_text: str, jd_text: str, prompt: str) -> list[dict]:
     so folding it into the cached block would just prevent cache hits
     for no benefit.
 
-    Needs `client.beta.prompt_caching.messages.create` (not the plain
-    `client.messages.create`) - the pinned SDK version (0.34.0) only
-    exposes cache_control support through that namespace. Verified live
-    against the real API: a second call with an identical CV+JD prefix
-    reads from cache (usage.cache_read_input_tokens > 0) instead of
-    paying full price again.
+    Works with the plain `client.messages.create` (prompt caching is no
+    longer a beta). A second call with an identical CV+JD prefix should
+    read from cache (usage.cache_read_input_tokens > 0) instead of paying
+    full price again.
     """
     return [
         {
