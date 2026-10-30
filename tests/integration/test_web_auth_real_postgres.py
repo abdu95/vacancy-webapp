@@ -214,6 +214,19 @@ try:
     assert statuses[:-1] == [200] * web_auth._SIGNIN_LIMIT and statuses[-1] == 429, statuses
     web_auth._signin_attempts.clear()
     print("PASS: sign-in attempts are rate limited per IP (429)")
+
+    # --- daily cap on NEW accounts per IP ---
+    web_auth._new_accounts.clear()
+    limit = web_auth._NEW_ACCOUNTS_PER_IP
+    statuses = [sign_in(browser(), f"g-new-{i}", f"new{i}@example.com", "New").status_code for i in range(limit + 1)]
+    assert statuses[:-1] == [200] * limit and statuses[-1] == 429, statuses
+    assert q("SELECT count(*) FROM users WHERE google_sub = %s", (f"g-new-{limit}",))[0][0] == 0, \
+        "the refused sign-up must not create an account"
+    assert sign_in(browser(), "g-new-0", "new0@example.com", "New").status_code == 200, \
+        "an existing account must still sign in after the cap is hit"
+    web_auth._new_accounts.clear()
+    web_auth._signin_attempts.clear()
+    print("PASS: new accounts are capped per IP per day; existing accounts still sign in")
 finally:
     if db_pool._pool is not None:
         db_pool._pool.closeall()

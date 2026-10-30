@@ -49,6 +49,7 @@ from app.db.web_accounts import (
     delete_session,
     get_account,
     get_session_user,
+    google_user_exists,
     join_waitlist,
     upsert_google_user,
 )
@@ -63,7 +64,7 @@ __all__ = [
     "mark_vacancies_alerted", "save_search_criteria",
     "get_or_create_order", "log_event",
     "WEB_FREE_LIMIT", "complete_onboarding", "create_session", "delete_session", "get_account",
-    "get_session_user", "join_waitlist", "upsert_google_user",
+    "get_session_user", "google_user_exists", "join_waitlist", "upsert_google_user",
     "get_active_companies", "check_connection",
 ]
 

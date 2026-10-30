@@ -23,6 +23,18 @@ def _hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def google_user_exists(google_sub: str) -> bool:
+    """True if this Google account already has a Chashma account."""
+    pool = db.get_pool()
+    conn = pool.getconn()
+    try:
+        with conn, conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE google_sub = %s", (google_sub,))
+            return cur.fetchone() is not None
+    finally:
+        pool.putconn(conn)
+
+
 def upsert_google_user(google_sub: str, email: str | None, given_name: str | None) -> tuple[int, bool]:
     """Finds the user for this Google account, or creates one (no
     telegram_id, signup_channel 'web', WEB_FREE_LIMIT checks). Refreshes

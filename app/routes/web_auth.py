@@ -28,6 +28,15 @@ _SIGNIN_LIMIT = 20
 _SIGNIN_WINDOW_S = 600
 _signin_attempts: dict[str, deque] = defaultdict(deque)
 
+# Cost guard: every new web account gets WEB_FREE_LIMIT free AI checks, so
+# cap how many NEW accounts one IP can create per day. Existing accounts can
+# always sign in. Not lower than 5 because many people in Uzbekistan share
+# one IP (mobile carrier NAT, office/university Wi-Fi). In-process like the
+# limit above (resets on deploy), and IPs are never stored in the database.
+_NEW_ACCOUNTS_PER_IP = int(os.getenv("NEW_WEB_ACCOUNTS_PER_IP_PER_DAY", "5"))
+_NEW_ACCOUNTS_WINDOW_S = 86400
+_new_accounts: dict[str, deque] = defaultdict(deque)
+
 
 def _client_ip(request: Request) -> str:
     # Railway's proxy puts the real client first in X-Forwarded-For.
@@ -43,6 +52,14 @@ def _rate_limit(request: Request) -> None:
     if len(attempts) >= _SIGNIN_LIMIT:
         raise HTTPException(429, "Too many sign-in attempts - try again in a few minutes")
     attempts.append(now)
+
+
+def _new_account_allowed(ip: str) -> bool:
+    now = time.monotonic()
+    created = _new_accounts[ip]
+    while created and now - created[0] > _NEW_ACCOUNTS_WINDOW_S:
+        created.popleft()
+    return len(created) < _NEW_ACCOUNTS_PER_IP
 
 
 def _is_local(request: Request) -> bool:
@@ -80,7 +97,13 @@ async def google_sign_in(req: GoogleSignInRequest, request: Request, response: R
     if not GOOGLE_CLIENT_ID:
         raise HTTPException(500, "Google sign-in is not configured")
     claims = verify_google_credential(req.credential)
+    ip = _client_ip(request)
+    if not db.google_user_exists(claims["sub"]) and not _new_account_allowed(ip):
+        logger.warning("New web account refused: daily per-IP limit reached")
+        raise HTTPException(429, "Too many new accounts from this network today - please try again tomorrow")
     user_id, created = db.upsert_google_user(claims["sub"], claims.get("email"), claims.get("given_name"))
+    if created:
+        _new_accounts[ip].append(time.monotonic())
     token = db.create_session(user_id)
     response.set_cookie(
         SESSION_COOKIE, token, max_age=db.web_accounts.SESSION_DAYS * 86400,
