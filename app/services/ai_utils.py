@@ -8,6 +8,7 @@ changes.
 """
 
 import json
+import logging
 import re
 
 # The one place the Claude model is set for every AI feature in this service.
@@ -23,6 +24,11 @@ NO_THINKING = {"type": "between_tools"}
 def response_text(response) -> str:
     """Joins the text blocks of a Claude response. Don't use content[0].text:
     newer models can return non-text blocks (e.g. thinking) before the text."""
+    if getattr(response, "stop_reason", None) == "max_tokens":
+        # The answer was cut off - JSON callers will fail to parse it. Logged
+        # so a too-low max_tokens shows up in the logs instead of only as a
+        # generic "try again" error for the user.
+        logging.getLogger(__name__).warning("Claude response hit max_tokens and was cut off")
     return "".join(b.text for b in response.content if b.type == "text")
 
 # Maps bot/i18n.py's language codes (also what db.get_user_language()

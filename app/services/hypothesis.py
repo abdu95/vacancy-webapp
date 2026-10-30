@@ -30,7 +30,7 @@ async def suggest_job_titles(cv_text: str) -> list:
     # output deterministic.
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=200,
+        max_tokens=400,
         thinking=NO_THINKING,
         output_config={"effort": "low"},
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{JOB_TITLE_PROMPT}"}],
@@ -54,7 +54,7 @@ async def extract_current_position(cv_text: str) -> str:
     (unlike suggest_job_titles) this should be consistent, not creative."""
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=30,
+        max_tokens=60,
         thinking=NO_THINKING,
         output_config={"effort": "low"},
         messages=[{"role": "user", "content": f"CV:\n{cv_text}\n\n{CURRENT_POSITION_PROMPT}"}],

@@ -69,7 +69,7 @@ async def generate_cv_fixes(level: str, vacancy: dict, cv_text: str, language: s
     jd_text = f"{vacancy['title']} at {vacancy['company']}\n{vacancy['summary']}"
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=900,
+        max_tokens=2000,
         thinking=NO_THINKING,
         output_config={"effort": "high"},
         messages=[{"role": "user", "content": cv_jd_content_blocks(cv_text, jd_text, prompt)}],
